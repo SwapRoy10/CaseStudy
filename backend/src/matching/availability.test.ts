@@ -1,6 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { intersect, mergeIntervals, normalizeBlocks, sharedIntersections } from './availability';
+import { intersect, isValidBlock, mergeIntervals, normalizeBlocks, sharedIntersections } from './availability';
 import { block } from './testUtils';
+
+describe('isValidBlock', () => {
+  it('accepts a normal block and the full day', () => {
+    expect(isValidBlock(block(1, 9, 9.5))).toBe(true);
+    expect(isValidBlock(block(0, 0, 24))).toBe(true);
+  });
+
+  it('rejects bad bounds', () => {
+    expect(isValidBlock(block(1, 10, 9))).toBe(false); // start after end
+    expect(isValidBlock(block(1, 9, 9))).toBe(false); // zero length
+    expect(isValidBlock(block(7, 9, 10))).toBe(false); // weekdays are 0-6
+    expect(isValidBlock(block(-1, 9, 10))).toBe(false);
+    expect(isValidBlock(block(1, 23, 25))).toBe(false); // past midnight
+  });
+
+  it('rejects missing or non-integer minutes', () => {
+    expect(isValidBlock({ weekday: 1, startMinute: 540.5, endMinute: 600 })).toBe(false);
+    // what a snake_case row from postgres would look like if nobody mapped it
+    expect(isValidBlock({ weekday: 1, start_minute: 540, end_minute: 600 } as any)).toBe(false);
+  });
+});
 
 describe('intersect', () => {
   it('returns the clipped overlap', () => {
@@ -17,10 +38,17 @@ describe('intersect', () => {
 });
 
 describe('normalizeBlocks', () => {
-  it('merges touching and overlapping blocks on the same day', () => {
-    expect(normalizeBlocks([block(1, 10, 11), block(1, 9, 10), block(1, 10.5, 12)])).toEqual([
-      block(1, 9, 12),
-    ]);
+  it('merges overlapping blocks', () => {
+    expect(normalizeBlocks([block(1, 10, 11.5), block(1, 9, 10.5)])).toEqual([block(1, 9, 11.5)]);
+  });
+
+  it('keeps touching 30 min blocks separate', () => {
+    const blocks = [block(1, 9, 9.5), block(1, 9.5, 10)];
+    expect(normalizeBlocks(blocks)).toEqual(blocks);
+  });
+
+  it('keeps the longer block when one is inside another', () => {
+    expect(normalizeBlocks([block(1, 9, 12), block(1, 10, 11)])).toEqual([block(1, 9, 12)]);
   });
 
   it('removes duplicates', () => {

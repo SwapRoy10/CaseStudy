@@ -24,6 +24,17 @@ describe('rankCandidates', () => {
     expect(ids(result)).toEqual(['threeSolo', 'twoGroup', 'twoSolo', 'one']);
   });
 
+  it('work style tie break still works when tied candidates are far apart in the input', () => {
+    // a and c both have 2 overlaps but b sits between them, so this only passes
+    // if overlap ranking runs before the work style tie break (Match.RuleOrder)
+    const classmates = [
+      profile('a', 'A_TRACK', 'SOLO', [block(1, 9, 10), block(2, 13, 14)]),
+      profile('b', 'A_TRACK', 'GROUP', [block(4, 18, 19)]),
+      profile('c', 'A_TRACK', 'GROUP', [block(1, 9, 10), block(2, 13, 14)]),
+    ];
+    expect(ids(rankCandidates(me, classmates, () => 0))).toEqual(['c', 'a', 'b']);
+  });
+
   it('randomly orders candidates that are fully tied', () => {
     const classmates = [
       profile('x', 'A_TRACK', 'GROUP', [block(1, 9, 10)]),

@@ -1,12 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { findCandidates } from './findCandidates';
-import { getCourseProfiles } from './data';
+import { getAverage, getCourseProfiles, getProfile } from './data';
+import { block, profile } from './testUtils';
 
-// runs against the mock data in data.ts, only getCourseProfiles is wrapped
-// so one test can make it fail
+// runs against the mock data in data.ts. The functions are wrapped so a test
+// can swap in one bad response with mockResolvedValueOnce
 vi.mock('./data', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./data')>();
-  return { ...actual, getCourseProfiles: vi.fn(actual.getCourseProfiles) };
+  return {
+    ...actual,
+    getProfile: vi.fn(actual.getProfile),
+    getCourseProfiles: vi.fn(actual.getCourseProfiles),
+    getAverage: vi.fn(actual.getAverage),
+  };
 });
 
 describe('findCandidates', () => {
@@ -61,5 +67,52 @@ describe('findCandidates', () => {
   it('a failed read throws instead of returning an empty list', async () => {
     vi.mocked(getCourseProfiles).mockRejectedValueOnce(new Error('connection refused'));
     await expect(findCandidates('101', '1')).rejects.toThrow('connection refused');
+  });
+});
+
+// These are for mistakes in the real db layer later. Without the checks each of
+// these would give wrong matches or an empty list instead of an error.
+describe('findCandidates with bad data from the db layer', () => {
+  const ok = profile('201', 'A_TRACK', 'GROUP', [block(1, 9, 10)]);
+
+  it('throws if a classmate from another course comes back', async () => {
+    vi.mocked(getCourseProfiles).mockResolvedValueOnce([{ ...ok, courseId: '2' }]);
+    await expect(findCandidates('101', '1')).rejects.toThrow('bad profile data');
+  });
+
+  it("throws on enums spelled the way the srs writes them ('A track', 'solo')", async () => {
+    vi.mocked(getCourseProfiles).mockResolvedValueOnce([{ ...ok, gradeGoal: 'A track' as any }]);
+    await expect(findCandidates('101', '1')).rejects.toThrow('bad profile data');
+
+    vi.mocked(getCourseProfiles).mockResolvedValueOnce([{ ...ok, workStyle: 'solo' as any }]);
+    await expect(findCandidates('101', '1')).rejects.toThrow('bad profile data');
+  });
+
+  it('throws on a numeric student id', async () => {
+    vi.mocked(getCourseProfiles).mockResolvedValueOnce([{ ...ok, studentId: 201 as any }]);
+    await expect(findCandidates('101', '1')).rejects.toThrow('bad profile data');
+  });
+
+  it('throws on a block with start after end', async () => {
+    vi.mocked(getCourseProfiles).mockResolvedValueOnce([{ ...ok, blocks: [block(1, 10, 9)] }]);
+    await expect(findCandidates('101', '1')).rejects.toThrow('bad profile data');
+  });
+
+  it("throws if the requester's own profile is bad", async () => {
+    vi.mocked(getProfile).mockResolvedValueOnce({ ...ok, studentId: '101', blocks: [block(7, 9, 10)] });
+    await expect(findCandidates('101', '1')).rejects.toThrow('bad profile data');
+  });
+
+  it('throws if the same student comes back twice', async () => {
+    vi.mocked(getCourseProfiles).mockResolvedValueOnce([ok, { ...ok, blocks: [block(3, 13, 14)] }]);
+    await expect(findCandidates('101', '1')).rejects.toThrow('duplicate profiles');
+  });
+
+  it('throws on a review average that is not null or 1-5', async () => {
+    // postgres AVG() comes back as a string, 0 would look like a real rating
+    for (const bad of ['3.2', 0, NaN, undefined]) {
+      vi.mocked(getAverage).mockResolvedValueOnce(bad as any);
+      await expect(findCandidates('101', '1')).rejects.toThrow('bad review average');
+    }
   });
 });

@@ -44,12 +44,24 @@ describe('stage 2 - filterByAvailability', () => {
     expect(result[0].sharedIntervals).toEqual([block(1, 10, 11), block(3, 14, 15)]);
   });
 
-  it('touching requester blocks count as one block', () => {
-    // 9-10 and 10-11 normalize to 9-11 (sdd glossary, canonical availability)
-    const requester = profile('1', 'A_TRACK', 'SOLO', [block(1, 9, 10), block(1, 10, 11)]);
-    const result = filterByAvailability(requester, [profile('2', 'A_TRACK', 'GROUP', [block(1, 9, 11)])]);
-    expect(result[0].overlapCount).toBe(1);
-    expect(result[0].sharedIntervals).toEqual([block(1, 9, 11)]);
+  it('each 30 min requester block counts on its own', () => {
+    // we keep touching blocks separate, so 9:00-9:30 and 9:30-10:00 are 2 blocks
+    const requester = profile('1', 'A_TRACK', 'SOLO', [block(1, 9, 9.5), block(1, 9.5, 10)]);
+    const result = filterByAvailability(requester, [profile('2', 'A_TRACK', 'GROUP', [block(1, 9, 10)])]);
+    expect(result[0].overlapCount).toBe(2);
+    expect(result[0].sharedIntervals).toEqual([block(1, 9, 9.5), block(1, 9.5, 10)]);
+  });
+
+  it('more 30 min blocks in common ranks higher', () => {
+    const requester = profile('1', 'A_TRACK', 'GROUP', [block(1, 9, 9.5), block(1, 9.5, 10), block(1, 10, 10.5)]);
+    const result = filterByAvailability(requester, [
+      profile('short', 'A_TRACK', 'GROUP', [block(1, 9, 9.5)]),
+      profile('long', 'A_TRACK', 'GROUP', [block(1, 9, 10.5)]),
+    ]);
+    expect(result.map((c) => [c.studentId, c.overlapCount])).toEqual([
+      ['short', 1],
+      ['long', 3],
+    ]);
   });
 
   it('duplicate requester blocks only count once', () => {

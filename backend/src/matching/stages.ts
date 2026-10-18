@@ -21,13 +21,12 @@ export function filterByGradeGoal(requester: Profile, classmates: Profile[]): Pr
 
 // Stage 2 - Match.Filter.Availability
 export function filterByAvailability(requester: Profile, candidates: Profile[]): ScoredCandidate[] {
-  // saved blocks should already be canonical, but normalize anyway so the count
-  // is right even if they aren't (e.g. 9-10 and 10-11 count as one block)
+  // normalize so a duplicate block in the requester's profile can't count twice
   const requesterBlocks = normalizeBlocks(requester.blocks);
   const result: ScoredCandidate[] = [];
 
   for (const c of candidates) {
-    const shared = sharedIntersections(requesterBlocks, normalizeBlocks(c.blocks));
+    const shared = sharedIntersections(requesterBlocks, c.blocks);
     if (shared.intervals.length === 0) continue;
 
     result.push({
