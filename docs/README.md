@@ -12,10 +12,10 @@ This page explains the matching code in [`backend/src/matching/`](../backend/src
 | Availability overlap math ([`availability.ts`](../backend/src/matching/availability.ts)) | Working, unit tested |
 | `findCandidates` with input checks ([`findCandidates.ts`](../backend/src/matching/findCandidates.ts)) | Working, tested against mock data |
 | Profile and review data ([`data.ts`](../backend/src/matching/data.ts)) | **Mock.** Hardcoded profiles and review averages, no database |
-| HTTP route for matching | **Not built.** No server or route calls `findCandidates` yet |
+| HTTP route for matching | Working: `GET /api/courses/:courseId/candidates` ([`candidates.controller.ts`](../backend/src/controllers/candidates.controller.ts)), tested in [`app.test.ts`](../backend/src/app.test.ts) |
 | `isEligible` check for match requests | Written and tested, but nothing calls it yet |
 
-So right now you can only run matching through the unit tests. The parts matching is waiting on from the rest of the team are listed in [`backend/README.md`](../backend/README.md#waiting-on-other-parts). The design plans to expose it as `GET /courses/{courseId}/candidates` with `courseId` from the URL and `studentId` from the session, but that route does not exist in the repo yet.
+You can run matching through the unit tests, or over HTTP with `npm run dev` from the repo root. The route is `GET /api/courses/{courseId}/candidates`, with `courseId` from the URL and `studentId` from the session (for now a demo `X-Student-Id` header, see [`docs/api/README.md`](api/README.md)). It still reads mock data. The parts matching is waiting on from the rest of the team are listed in [`backend/README.md`](../backend/README.md#waiting-on-other-parts).
 
 ## Files
 
@@ -259,7 +259,7 @@ If a data function itself throws (for example a failed read), the error is passe
 
 ## Running the tests
 
-Matching has no server and needs no environment variables. You only need Node and npm. The locked `vitest` version (5.0.5) needs Node `^22.12.0`, `^24.0.0` or `>=26.0.0`.
+The matching tests need no server and no environment variables. You only need Node and npm. The locked `vitest` version (5.0.5) needs Node `^22.12.0`, `^24.0.0` or `>=26.0.0`.
 
 ```sh
 cd backend
@@ -287,7 +287,7 @@ npx vitest run -t "rankCandidates"
 
 ### Where errors show up
 
-The matching code doesn't log anything. Errors are thrown out of `findCandidates`, so right now you see them in the vitest output. The comment in `errors.ts` says an API layer should map `StateConflictError` to an API error and HTTP status, and turn other thrown errors into `UNAVAILABLE`. That layer doesn't exist yet.
+The matching code doesn't log anything. Errors are thrown out of `findCandidates`, so right now you see them in the vitest output. Over HTTP, [`errorHandler.ts`](../backend/src/middleware/errorHandler.ts) maps `StateConflictError` to a 409 with its `reason`, and turns any other thrown error into a 503 `UNAVAILABLE`. The full error is logged in the server terminal with the request id; the client only gets a generic message.
 
 ### Checks backed by the code and tests
 
