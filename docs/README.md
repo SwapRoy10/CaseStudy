@@ -1,4 +1,4 @@
-# CaseStudy matching algorithm
+# CaseStudy matching algorithm explanations
 
 CaseStudy helps students in the same course find study or project partners. A student saves a course profile with a grade goal, a work style and their weekly free time. The matching code takes that profile and returns a ranked list of classmates they could work with.
 

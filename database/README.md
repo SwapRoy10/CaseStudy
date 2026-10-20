@@ -1,1 +1,1 @@
-CasStudy profile database
+CaseStudy profile database

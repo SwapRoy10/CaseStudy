@@ -1,8 +1,13 @@
 # CaseStudy backend
 
+Backend & Integration; API routing, debugging,
+Matching  Algorithm
+
+## Matching Algorithm
+
 Right now the backend only has the matching module in [`src/matching/`](src/matching/). How it works is explained in [`docs/README.md`](../docs/README.md).
 
-## Running it
+### Running it
 
 There is no server yet, so the tests are the way to run the code.
 
@@ -12,7 +17,7 @@ npm test
 npm run typecheck
 ```
 
-## Waiting on other parts
+### Waiting on other parts
 
 Matching is written so it can be tested on its own, but it still depends on parts other people are building. Until those are in, matching runs on mock data in [`src/matching/data.ts`](src/matching/data.ts).
 
