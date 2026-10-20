@@ -1,0 +1,21 @@
+{
+  "name": "casestudy",
+  "private": true,
+  "description": "CaseStudy: study partner matching",
+  "scripts": {
+    "setup": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "demo": "npm run build && concurrently -k -n api,web -c cyan,magenta \"npm start --prefix backend\" \"npm run preview --prefix frontend\"",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:demo": "node scripts/smoke.mjs http://localhost:4173",
+    "test": "npm test --prefix backend",
+    "typecheck": "npm run typecheck --prefix backend && npm run typecheck --prefix frontend"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
