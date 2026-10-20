@@ -1,16 +1,12 @@
 import type { Request, Response } from 'express';
 import { findCandidates } from '../matching/findCandidates';
-import { ApiError } from '../middleware/errorHandler';
-import { ID_PATTERN } from '../middleware/session';
 
 // GET /api/courses/:courseId/candidates
-// Thin on purpose: validate input, call the matching module, send the result.
+// Thin on purpose: params are already validated by validate({ params: courseParams })
+// in the route, so this just calls the matching module and sends the result.
 // Errors bubble to errorHandler (Express 5 forwards rejected promises).
-export async function getCandidates(req: Request<{ courseId: string }>, res: Response) {
-  const { courseId } = req.params;
-  if (!ID_PATTERN.test(courseId)) {
-    throw new ApiError(400, 'VALIDATION', 'courseId must be a numeric id.');
-  }
+export async function getCandidates(_req: Request, res: Response) {
+  const { courseId } = res.locals.params as { courseId: string };
 
   // TODO (enrollment module): check the student is on this course's roster first
   // and throw StateConflictError('NOT_ENROLLED', ...) if not. findCandidates

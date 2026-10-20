@@ -12,6 +12,7 @@ export type ApiErrorCode =
   | 'NOT_FOUND'
   | 'STATE_CONFLICT'
   | 'UNAVAILABLE';
+// (RATE_LIMITED, 429, is sent directly by middleware/security.ts)
 
 // Thrown by the API layer itself (bad params, missing session, unknown route).
 export class ApiError extends Error {
@@ -29,7 +30,7 @@ export const notFound: RequestHandler = (req, _res, next) => {
   next(new ApiError(404, 'NOT_FOUND', `No route for ${req.method} ${req.path}`));
 };
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof ApiError) {
     res.status(err.status).json({ error: { code: err.code, message: err.message } });
     return;
@@ -49,9 +50,9 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
 
   // Anything else (failed db read, bad data from the db layer) is UNAVAILABLE.
-  // Log the detail server-side only; it can contain ids (SDD 9.8) and the
-  // client doesn't need it.
-  console.error(err);
+  // Log the detail server-side only (tagged with the request id); it can contain
+  // ids (SDD 9.8) and the client doesn't need it.
+  req.log.error({ err }, 'Unhandled request error');
   res.status(503).json({
     error: { code: 'UNAVAILABLE', message: 'Something went wrong on our end. Please try again.' },
   });

@@ -78,12 +78,42 @@ describe('GET /api/courses/:courseId/candidates', () => {
 
   it('maps a failed db read to 503 UNAVAILABLE without leaking details', async () => {
     dbDown.on = true;
-    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const res = await request(app).get('/api/courses/1/candidates').set(asStudent('101'));
     expect(res.status).toBe(503);
     expect(res.body.error.code).toBe('UNAVAILABLE');
     expect(JSON.stringify(res.body)).not.toContain('connection refused');
+  });
+});
+
+describe('security and logging middleware', () => {
+  it('sets helmet security headers and hides x-powered-by', async () => {
+    const res = await request(app).get('/api/health');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('tags every response with a request id, reusing one sent by the client', async () => {
+    const fresh = await request(app).get('/api/health');
+    expect(fresh.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
+
+    const echoed = await request(app).get('/api/health').set('X-Request-Id', 'trace-123');
+    expect(echoed.headers['x-request-id']).toBe('trace-123');
+  });
+
+  it('rate limits the API with the standard error shape, but never health checks', async () => {
+    const limited = createApp(); // fresh app = fresh counter
+    const max = 300; // RATE_LIMIT_MAX default
+    for (let i = 0; i < max; i++) {
+      await request(limited).get('/api/courses/1/candidates').set(asStudent('101'));
+    }
+    const res = await request(limited).get('/api/courses/1/candidates').set(asStudent('101'));
+    expect(res.status).toBe(429);
+    expect(res.body.error.code).toBe('RATE_LIMITED');
+
+    const health = await request(limited).get('/api/health');
+    expect(health.status).toBe(200);
   });
 });
 

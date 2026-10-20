@@ -20,9 +20,12 @@ Every error response has the same body:
 | 401 | `UNAUTHENTICATED` | No signed-in student |
 | 404 | `NOT_FOUND` | Unknown route |
 | 409 | `STATE_CONFLICT` | A module threw `StateConflictError`; `reason` says which (SDD 10.3) |
+| 429 | `RATE_LIMITED` | More than `RATE_LIMIT_MAX` requests (default 300) from one IP in 15 minutes. `/api/health` is exempt |
 | 503 | `UNAVAILABLE` | Any unexpected error, e.g. a failed database read. Details are logged on the server, never sent to the client |
 
 `message` is written for end users and can be shown as-is.
+
+Every response carries an `X-Request-Id` header (or echoes the one you sent). The same id appears in the server log line for that request, so a bug report with the id leads straight to the log.
 
 ## Endpoints
 

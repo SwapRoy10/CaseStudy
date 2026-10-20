@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import { ApiError } from './errorHandler';
+import { idString } from './validate';
 
 // The SDD says studentId comes from the session, never from the URL or body,
 // so a student can't ask for someone else's matches.
@@ -9,14 +10,12 @@ import { ApiError } from './errorHandler';
 // session/auth handling; everything downstream only reads res.locals.studentId,
 // so nothing else has to change.
 
-export const ID_PATTERN = /^\d+$/; // ids are Postgres bigints sent as strings
-
 export const requireStudent: RequestHandler = (req, res, next) => {
-  const studentId = req.header('x-student-id');
-  if (!studentId || !ID_PATTERN.test(studentId)) {
+  const parsed = idString.safeParse(req.header('x-student-id'));
+  if (!parsed.success) {
     next(new ApiError(401, 'UNAUTHENTICATED', 'Sign in to continue.'));
     return;
   }
-  res.locals.studentId = studentId;
+  res.locals.studentId = parsed.data;
   next();
 };

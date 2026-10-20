@@ -24,7 +24,7 @@ export function CandidatesPage({ studentId, courseId }: { studentId: Id; courseI
         if (err instanceof ApiRequestError) {
           // STATE_CONFLICT messages (e.g. NO_PROFILE) are written for the user.
           // Network/server problems are worth retrying; conflicts aren't.
-          const retryable = err.code === 'NETWORK' || err.code === 'UNAVAILABLE';
+          const retryable = ['NETWORK', 'UNAVAILABLE', 'RATE_LIMITED'].includes(err.code);
           setState({ kind: 'error', message: err.message, retryable });
         } else {
           setState({ kind: 'error', message: 'Something went wrong.', retryable: true });
