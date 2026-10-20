@@ -3,9 +3,58 @@
 Backend & Integration; API routing, debugging,
 Matching  Algorithm
 
+## Running the server
+
+Express 5 + TypeScript. From the repo root, `npm run dev` starts this together with the frontend.
+
+```bash
+npm install
+npm run dev        # http://localhost:4000/api, reloads on save
+npm test           # matching + API + config tests
+npm run build && npm start
+```
+
+Config: copy `.env.example` to `.env` (optional; defaults work for local dev). Every setting is validated with Zod in `src/config.ts`. A bad value stops the server at startup with a message naming the variable.
+
+## How a request flows
+
+```
+requestLogger → helmet → cors → json → rate limit → routes/index.ts
+                                                         ↓
+                                     validate(...) → controller → module (matching/, profile/, ...)
+                                                                     ↓ throws
+                                                   middleware/errorHandler.ts → { error: { code, reason?, message } }
+```
+
+- **Routes** map URLs to a controller, with `validate({ params, query, body })` in front to check input with Zod schemas.
+- **Controllers** read validated input from `res.locals.params` / `.query` / `.body` and the student from `res.locals.studentId`, call one module function and send its result. No business logic.
+- **Modules** know nothing about Express. They throw `StateConflictError` for expected failures and plain errors for everything else.
+- **errorHandler** maps those to HTTP statuses (SDD 10.3) and logs unexpected errors with the request id. See `docs/api/README.md`.
+
+## Adding an endpoint
+
+1. Write the module function (e.g. `profile/saveProfile.ts`) with its own tests.
+2. Add Zod schemas for its input (reuse `courseParams` / `idString` from `middleware/validate.ts`).
+3. Add a controller in `controllers/`.
+4. Add one line in `routes/index.ts`: `apiRouter.put('/courses/:courseId/profile', validate({ params: courseParams, body: profileBody }), saveProfile);`
+5. Add a test in `src/app.test.ts` and document it in `docs/api/README.md`.
+
+## Borrowed from the express-typescript-prisma-postgresql template
+
+| From the template | Here | Notes |
+| --- | --- | --- |
+| Zod env validation, fail fast | `src/config.ts` | Uses Node's built-in `.env` loading instead of dotenv |
+| helmet, CORS whitelist, rate limiting | `src/app.ts`, `middleware/security.ts` | Health checks exempt; 429s use our error shape |
+| pino + pino-http, request ids, redaction | `middleware/logger.ts` | Logs to stdout (one line per request in dev), silent in tests |
+| Zod request validation middleware | `middleware/validate.ts` | Validates params, query and body, not just body |
+| Graceful shutdown | `src/server.ts` | Add the DB disconnect there once the database module lands |
+| App/server split, `tsconfig.build.json`, Supertest integration tests | already matched | |
+
+Not taken: `uni-response` (the SDD defines our error shape), JWT/bcrypt auth (login isn't designed yet; when it is, the template's `auth.middleware.ts` and the stricter login rate limiter are good references), the `features/<name>/{controllers,routes,...}` folder nesting (the matching module's flat layout is already established), and ESLint/Prettier/Husky (worth a team decision; adding them would reformat everyone's code). Prisma is the database owner's call; see the template's `prisma/` and `src/config/prisma.config.ts` if you go that way.
+
 ## Matching Algorithm
 
-Right now the backend only has the matching module in [`src/matching/`](src/matching/). Matching takes one student's profile for a course and gives back a ranked list of classmates they could work with. This is a quick outline. The full walkthrough with worked examples is in [`docs/README.md`](../docs/README.md).
+The matching module is in [`src/matching/`](src/matching/). Matching takes one student's profile for a course and gives back a ranked list of classmates they could work with. This is a quick outline. The full walkthrough with worked examples is in [`docs/README.md`](../docs/README.md).
 
 ### What's done
 
@@ -59,13 +108,7 @@ A list of everyone who passed both filters, in rank order, with no limit on how 
 
 ### Running it
 
-There is no server yet, so the tests are the way to run the code.
-
-```sh
-npm ci
-npm test
-npm run typecheck
-```
+`npm test` runs the matching tests along with the API tests. Over HTTP, matching is served at `GET /api/courses/:courseId/candidates` (see [Running the server](#running-the-server) and [`docs/api/README.md`](../docs/api/README.md)).
 
 ### Waiting on other parts
 
@@ -75,7 +118,7 @@ Matching is written so it can be tested on its own, but it still depends on part
 |---|---|---|
 | Database | Real queries for profiles and enrollment. Only students on the roster with a complete profile should come back, and blocks should be read in one batch | Replace `getProfile` and `getCourseProfiles` in `data.ts` |
 | Peer review | A real `getAverage` | Replace the mock `getAverage` in `data.ts` |
-| API layer | A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors | Calls `findCandidates` in `src/matching/findCandidates.ts` |
+| API layer | ~~A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors~~ **Done**: `GET /api/courses/:courseId/candidates` | [`src/controllers/candidates.controller.ts`](src/controllers/candidates.controller.ts) |
 | Match requests | A check before saving a request that the recipient is still eligible | Calls `isEligible` in `src/matching/pipeline.ts` |
 | Profiles | Cleaning up blocks the same way when a profile is saved | Calls `normalizeBlocks` in `src/matching/availability.ts` |
 
