@@ -23,7 +23,10 @@ export default function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <h1>CaseStudy</h1>
+      <div>
+          <h1>CaseStudy</h1>
+          <p className="muted">Find study partners in your course</p>
+        </div>        
         <ConnectionStatus />
       </header>
 
