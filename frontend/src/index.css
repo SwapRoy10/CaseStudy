@@ -61,3 +61,65 @@ h2 { font-size: 1.1rem; }
 .tags span { font-size: 0.85rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
 .label { margin: 8px 0 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .intervals { margin: 0; padding-left: 18px; }
+/* Request button on candidate cards */
+.request-btn {
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+.request-btn:hover { opacity: 0.85; }
+
+.request-sent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--ok);
+  font-weight: 600;
+    animation: pop-in 0.3s ease-out;
+
+}
+.request-sent button { font-size: 0.85rem; font-weight: 400; color: var(--muted); }
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .request-sent { animation: none; }
+}
+
+/* Responsive layout */
+@media (min-width: 900px) {
+  .shell { max-width: 1040px; }
+  .cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .demo-bar { flex-direction: column; align-items: stretch; }
+  .request-btn { width: 100%; }
+}
+
+/* Page tabs */
+.tabs { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--border); }
+.tab { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* Profile form */
+.form-field { display: flex; flex-direction: column; gap: 6px; margin: 16px 0; max-width: 320px; }
+.form-field label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.save-btn { padding: 8px 14px; border: none; background: var(--accent); color: var(--bg); font-weight: 600; }
+.save-btn:hover { opacity: 0.85; }
+
+
+/* Availability editor */
+.availability { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; max-width: 520px; }
+.availability legend { padding: 0 6px; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.block-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.block-row input { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.form-error { margin: 8px 0; color: var(--bad); font-weight: 600; }
