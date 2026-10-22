@@ -65,9 +65,10 @@ The matching module is in [`src/matching/`](src/matching/). Matching takes one s
 | [`stages.ts`](src/matching/stages.ts) | One function for each rule |
 | [`availability.ts`](src/matching/availability.ts) | The time math: checking blocks, finding overlaps, merging, counting |
 | [`types.ts`](src/matching/types.ts), [`errors.ts`](src/matching/errors.ts) | Shared types and the `NO_PROFILE` error |
-| [`data.ts`](src/matching/data.ts) | Mock data for now (see below) |
+| [`data.ts`](src/matching/data.ts) | The Postgres reads: profiles, roster check, review averages |
+| [`mockData.ts`](src/matching/mockData.ts) | In-memory copy of the same functions, used by the tests |
 
-The tests are in the `.test.ts` files next to the code. There are 57 and they all pass.
+The tests are in the `.test.ts` files next to the code. They run on the mock data, so no database is needed.
 
 ### Inputs
 
@@ -112,14 +113,14 @@ A list of everyone who passed both filters, in rank order, with no limit on how 
 
 ### Waiting on other parts
 
-Matching is written so it can be tested on its own, but it still depends on parts other people are building. Until those are in, matching runs on mock data in [`src/matching/data.ts`](src/matching/data.ts).
+Matching reads profiles, the roster and review averages from Postgres through [`src/matching/data.ts`](src/matching/data.ts). The tests swap that file for [`mockData.ts`](src/matching/mockData.ts). Still open:
 
 | Needed from | What matching needs | Where it plugs in |
 |---|---|---|
-| Database | Real queries for profiles and enrollment. Only students on the roster with a complete profile should come back, and blocks should be read in one batch | Replace `getProfile` and `getCourseProfiles` in `data.ts` |
-| Peer review | A real `getAverage` | Replace the mock `getAverage` in `data.ts` |
+| Database | ~~Real queries for profiles and enrollment~~ **Done**: `getProfile`, `getCourseProfiles` and `isEnrolled` read the Prisma tables, with blocks in the same query | [`src/matching/data.ts`](src/matching/data.ts) |
+| Peer review | ~~A real average~~ **Done for now**: `getAverages` computes it straight from `rating_criterion`. Swap it for the review module's own function if they add one | [`src/matching/data.ts`](src/matching/data.ts) |
 | API layer | ~~A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors~~ **Done**: `GET /api/courses/:courseId/candidates` | [`src/controllers/candidates.controller.ts`](src/controllers/candidates.controller.ts) |
 | Match requests | A check before saving a request that the recipient is still eligible | Calls `isEligible` in `src/matching/pipeline.ts` |
 | Profiles | Cleaning up blocks the same way when a profile is saved | Calls `normalizeBlocks` in `src/matching/availability.ts` |
 
-The function signatures in `data.ts` are what the real queries should match. `findCandidates` already checks the data it gets back, so if a real query returns rows in the wrong shape, `findCandidates` throws an error instead of quietly giving wrong matches.
+`findCandidates` still checks the data it gets back, so if a real query returns rows in the wrong shape, `findCandidates` throws an error instead of quietly giving wrong matches.

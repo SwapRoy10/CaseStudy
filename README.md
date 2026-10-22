@@ -13,7 +13,7 @@ npm run dev       # backend on :4000 + frontend on :5173, both auto-reload
 
 Open http://localhost:5173. The green "API connected" dot means the frontend is reaching the backend.
 
-Until login exists, use the **Demo student** picker to switch between the mock students in `backend/src/matching/data.ts`.
+Until login exists, use the **Demo student** picker to switch between students. Matching now reads from Postgres, so the backend needs `DATABASE_URL` set and the database migrated and seeded (`npx prisma migrate deploy` and `npx prisma db seed` in `backend`). The picker's ids need to match the seeded student ids.
 
 ## Running the demo
 

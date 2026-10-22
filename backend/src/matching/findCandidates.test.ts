@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { findCandidates } from './findCandidates';
-import { getAverage, getCourseProfiles, getProfile } from './data';
+import { getAverages, getCourseProfiles, getProfile } from './data';
 import { block, profile } from './testUtils';
 
-// runs against the mock data in data.ts. The functions are wrapped so a test
+// runs against the mock data in mockData.ts. The functions are wrapped so a test
 // can swap in one bad response with mockResolvedValueOnce
-vi.mock('./data', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./data')>();
+vi.mock('./data', async () => {
+  const mock = await import('./mockData.js');
   return {
-    ...actual,
-    getProfile: vi.fn(actual.getProfile),
-    getCourseProfiles: vi.fn(actual.getCourseProfiles),
-    getAverage: vi.fn(actual.getAverage),
+    ...mock,
+    getProfile: vi.fn(mock.getProfile),
+    getCourseProfiles: vi.fn(mock.getCourseProfiles),
+    getAverages: vi.fn(mock.getAverages),
   };
 });
 
@@ -109,9 +109,9 @@ describe('findCandidates with bad data from the db layer', () => {
   });
 
   it('throws on a review average that is not null or 1-5', async () => {
-    // postgres AVG() comes back as a string, 0 would look like a real rating
+    // a numeric column can come back as a string, 0 would look like a real rating
     for (const bad of ['3.2', 0, NaN, undefined]) {
-      vi.mocked(getAverage).mockResolvedValueOnce(bad as any);
+      vi.mocked(getAverages).mockResolvedValueOnce(new Map([['102', bad as any]]));
       await expect(findCandidates('101', '1')).rejects.toThrow('bad review average');
     }
   });
