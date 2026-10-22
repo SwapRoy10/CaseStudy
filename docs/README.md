@@ -11,11 +11,11 @@ This page explains the matching code in [`backend/src/matching/`](../backend/src
 | The five matching rules ([`stages.ts`](../backend/src/matching/stages.ts), [`pipeline.ts`](../backend/src/matching/pipeline.ts)) | Working, unit tested |
 | Availability overlap math ([`availability.ts`](../backend/src/matching/availability.ts)) | Working, unit tested |
 | `findCandidates` with input checks ([`findCandidates.ts`](../backend/src/matching/findCandidates.ts)) | Working, tested against mock data |
-| Profile and review data ([`data.ts`](../backend/src/matching/data.ts)) | **Mock.** Hardcoded profiles and review averages, no database |
+| Profile and review data ([`data.ts`](../backend/src/matching/data.ts)) | Working: Prisma queries for profiles, roster and review averages. Not yet run against a live database. The tests use [`mockData.ts`](../backend/src/matching/mockData.ts) |
 | HTTP route for matching | Working: `GET /api/courses/:courseId/candidates` ([`candidates.controller.ts`](../backend/src/controllers/candidates.controller.ts)), tested in [`app.test.ts`](../backend/src/app.test.ts) |
 | `isEligible` check for match requests | Written and tested, but nothing calls it yet |
 
-You can run matching through the unit tests, or over HTTP with `npm run dev` from the repo root. The route is `GET /api/courses/{courseId}/candidates`, with `courseId` from the URL and `studentId` from the session (for now a demo `X-Student-Id` header, see [`docs/api/README.md`](api/README.md)). It still reads mock data. The parts matching is waiting on from the rest of the team are listed in [`backend/README.md`](../backend/README.md#waiting-on-other-parts).
+You can run matching through the unit tests, or over HTTP with `npm run dev` from the repo root. The route is `GET /api/courses/{courseId}/candidates`, with `courseId` from the URL and `studentId` from the session (for now a demo `X-Student-Id` header, see [`docs/api/README.md`](api/README.md)). It reads from Postgres. The parts matching is waiting on from the rest of the team are listed in [`backend/README.md`](../backend/README.md#waiting-on-other-parts).
 
 ## Files
 
@@ -26,7 +26,8 @@ You can run matching through the unit tests, or over HTTP with `npm run dev` fro
 | [`stages.ts`](../backend/src/matching/stages.ts) | One function per matching rule |
 | [`pipeline.ts`](../backend/src/matching/pipeline.ts) | `rankCandidates` runs the rules in order. Also `isEligible` |
 | [`findCandidates.ts`](../backend/src/matching/findCandidates.ts) | Entry point. Loads data, checks it, ranks, adds review averages |
-| [`data.ts`](../backend/src/matching/data.ts) | Mock data access (`getProfile`, `getCourseProfiles`, `getAverage`) |
+| [`data.ts`](../backend/src/matching/data.ts) | Postgres reads (`getProfile`, `getCourseProfiles`, `getAverages`, `isEnrolled`) |
+| [`mockData.ts`](../backend/src/matching/mockData.ts) | In-memory version of the same functions for the tests |
 | [`errors.ts`](../backend/src/matching/errors.ts) | `StateConflictError`. Matching only uses the `NO_PROFILE` reason |
 | [`testUtils.ts`](../backend/src/matching/testUtils.ts) | Test helpers. `block(1, 9, 9.5)` means Monday 9:00 to 9:30 |
 
@@ -39,7 +40,7 @@ You can run matching through the unit tests, or over HTTP with `npm run dev` fro
 3. Load every profile in the course with `getCourseProfiles` and check each one.
 4. Throw if the same student shows up twice.
 5. Call `rankCandidates` in [`pipeline.ts`](../backend/src/matching/pipeline.ts), which runs the five rules below.
-6. For each ranked candidate, look up their review average with `getAverage`.
+6. Look up the review averages for all the ranked candidates at once with `getAverages`.
 7. Return a `CandidateSummary` for each one, in rank order.
 
 The review average is added only after ranking, so it can't change anyone's position.
@@ -124,7 +125,7 @@ It has no name, email or full availability on purpose. The overlap count is used
 
 ## Example: input and output
 
-This uses the mock data in [`data.ts`](../backend/src/matching/data.ts), and it is what `findCandidates.test.ts` checks.
+This uses the mock data in [`mockData.ts`](../backend/src/matching/mockData.ts), and it is what `findCandidates.test.ts` checks.
 
 Student `101` asks for matches in course `1`. They are `A_TRACK`, `GROUP`, free Mon 9:00 to 11:00 and Wed 13:00 to 15:00.
 
@@ -230,7 +231,7 @@ Classmates with no blocks are not an error. They just get removed by the availab
 
 ### Bad data checks
 
-`data.ts` is a mock, so `findCandidates` checks what it gets back to catch mistakes once real queries replace it. Each check throws a plain `Error`, and only ids go in the message.
+`findCandidates` checks what `data.ts` gives back so a bad query shows up as an error, not as wrong matches. Each check throws a plain `Error`, and only ids go in the message.
 
 | Problem | Error message |
 |---|---|
@@ -247,7 +248,7 @@ If a data function itself throws (for example a failed read), the error is passe
 
 ### Things matching does not handle yet
 
-* No enrollment check. The mock `getCourseProfiles` returns everyone with that `courseId`. The TODO in `data.ts` says the real query should only return students on the roster.
+* The roster check lives in the route, not in `findCandidates`. The controller calls `isEnrolled` first and returns `NOT_ENROLLED`. The query in `getCourseProfiles` only returns people with saved profiles, which can only exist for enrolled students.
 * The two reads are not in one transaction yet (TODO in `findCandidates.ts`).
 * Review averages are looked up one at a time (TODO to batch it).
 * Blocks can't cross midnight. A block like 23:00 to 01:00 has to be saved as two blocks, otherwise it fails `isValidBlock`.

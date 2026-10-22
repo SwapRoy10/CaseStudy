@@ -4,13 +4,13 @@ import { createApp } from './app';
 
 // Lets one test simulate a failed db read without touching the mock data.
 const dbDown = vi.hoisted(() => ({ on: false }));
-vi.mock('./matching/data', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./matching/data')>();
+vi.mock('./matching/data', async () => {
+  const mock = await import('./matching/mockData.js');
   return {
-    ...actual,
+    ...mock,
     getCourseProfiles: async (courseId: string) => {
       if (dbDown.on) throw new Error('connection refused');
-      return actual.getCourseProfiles(courseId);
+      return mock.getCourseProfiles(courseId);
     },
   };
 });
@@ -74,6 +74,19 @@ describe('GET /api/courses/:courseId/candidates', () => {
       reason: 'NO_PROFILE',
       message: 'Complete your profile to see matches.',
     });
+  });
+
+  it('maps a student with no profile yet to NO_PROFILE', async () => {
+    // 108 is on the roster but hasn't saved anything
+    const res = await request(app).get('/api/courses/1/candidates').set(asStudent('108'));
+    expect(res.status).toBe(409);
+    expect(res.body.error.reason).toBe('NO_PROFILE');
+  });
+
+  it('maps a student who is not on the roster to NOT_ENROLLED', async () => {
+    const res = await request(app).get('/api/courses/1/candidates').set(asStudent('555'));
+    expect(res.status).toBe(409);
+    expect(res.body.error.reason).toBe('NOT_ENROLLED');
   });
 
   it('maps a failed db read to 503 UNAVAILABLE without leaking details', async () => {

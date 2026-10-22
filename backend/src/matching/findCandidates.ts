@@ -1,6 +1,6 @@
 import { StateConflictError } from './errors';
 import { CandidateSummary, Id, Profile } from './types';
-import { getAverage, getCourseProfiles, getProfile } from './data';
+import { getAverages, getCourseProfiles, getProfile } from './data';
 import { isValidBlock } from './availability';
 import { rankCandidates } from './pipeline';
 import { ScoredCandidate } from './stages';
@@ -34,17 +34,15 @@ export async function findCandidates(
   const ranked = rankCandidates(requester, classmates, rng);
 
   // averages get added after ranking so they can't change the order (CO-3)
-  // TODO: batch this once getAverage is a real query
-  const summaries: CandidateSummary[] = [];
-  for (const c of ranked) {
-    const avg = await getAverage(c.studentId);
-    // null means no reviews yet, anything else has to be a real 1-5 rating
+  const averages = await getAverages(ranked.map((c) => c.studentId));
+  return ranked.map((c) => {
+    // no entry means no reviews yet, anything else has to be a real 1-5 rating
+    const avg = averages.has(c.studentId) ? averages.get(c.studentId)! : null;
     if (avg !== null && !(typeof avg === 'number' && avg >= 1 && avg <= 5)) {
       throw new Error(`bad review average for student ${c.studentId}`);
     }
-    summaries.push(toSummary(c, avg));
-  }
-  return summaries;
+    return toSummary(c, avg);
+  });
 }
 
 // If the db layer hands back rows in the wrong shape (snake_case columns, 'A track'
