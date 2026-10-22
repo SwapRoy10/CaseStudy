@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { setDemoStudent } from './services/api';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { CandidatesPage } from './pages/CandidatesPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 // Students in the backend's mock data (backend/src/matching/data.ts), all in course 1.
 // Remove the picker once real login exists.
@@ -18,6 +19,7 @@ const DEMO_COURSE = '1';
 export default function App() {
   const [studentId, setStudentId] = useState(DEMO_STUDENTS[0].id);
   // Set synchronously so the page's first request already carries the id
+    const [page, setPage] = useState<'matches' | 'profile'>('matches');
   setDemoStudent(studentId);
 
   return (
@@ -29,6 +31,21 @@ export default function App() {
         </div>        
         <ConnectionStatus />
       </header>
+
+      <nav className="tabs">
+        <button
+          className={page === 'matches' ? 'tab active' : 'tab'}
+          onClick={() => setPage('matches')}
+        >
+          Matches
+        </button>
+        <button
+          className={page === 'profile' ? 'tab active' : 'tab'}
+          onClick={() => setPage('profile')}
+        >
+          My profile
+        </button>
+      </nav>
 
       <div className="demo-bar">
         <label>
@@ -45,8 +62,11 @@ export default function App() {
       </div>
 
       <main>
-        <CandidatesPage studentId={studentId} courseId={DEMO_COURSE} />
-      </main>
+{page === 'matches' ? (
+          <CandidatesPage studentId={studentId} courseId={DEMO_COURSE} />
+        ) : (
+          <ProfilePage />
+        )}      </main>
     </div>
   );
 }
