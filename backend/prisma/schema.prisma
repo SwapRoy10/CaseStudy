@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GradeGoal {
+  A_TRACK
+  PASS_TRACK
+}
+
+enum WorkStyle {
+  SOLO
+  GROUP
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELED
+}
+
+model Student {
+  id                BigInt  @id @default(autoincrement())
+  name              String
+  schoolEmail       String  @unique @map("school_email")
+  passwordHash      String  @map("password_hash")
+  tutorialCompleted Boolean @default(false) @map("tutorial_completed")
+  enrollments       Enrollment[]
+  sentRequests      MatchRequest[] @relation("Requester")
+  receivedRequests  MatchRequest[] @relation("Recipient")
+  memberships       GroupMembership[]
+  reviewsGiven      PeerReview[] @relation("Reviewer")
+  reviewsReceived   PeerReview[] @relation("Reviewee")
+  @@map("student")
+}
+
+model Course {
+  id          BigInt @id @default(autoincrement())
+  code        String
+  section     String
+  term        String
+  enrollments Enrollment[]
+  requests    MatchRequest[]
+  groups      StudyGroup[]
+  @@unique([code, section, term])
+  @@map("course")
+}
+
+model Enrollment {
+  studentId BigInt  @map("student_id")
+  courseId  BigInt  @map("course_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  course    Course  @relation(fields: [courseId], references: [id])
+  profile   Profile?
+  @@id([studentId, courseId])
+  @@map("enrollment")
+}
+
+model Profile {
+  id         BigInt    @id @default(autoincrement())
+  studentId  BigInt    @map("student_id")
+  courseId   BigInt    @map("course_id")
+  gradeGoal  GradeGoal @map("grade_goal")
+  workStyle  WorkStyle @map("work_style")
+  enrollment Enrollment @relation(fields: [studentId, courseId], references: [studentId, courseId])
+  blocks     AvailabilityBlock[]
+  @@unique([studentId, courseId])
+  @@index([courseId, gradeGoal])
+  @@map("profile")
+}
+
+model AvailabilityBlock {
+  id          BigInt  @id @default(autoincrement())
+  profileId   BigInt  @map("profile_id")
+  weekday     Int     @db.SmallInt
+  startMinute Int     @map("start_minute") @db.SmallInt
+  endMinute   Int     @map("end_minute") @db.SmallInt
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId, weekday])
+  @@map("availability_block")
+}
+
+model MatchRequest {
+  id          BigInt        @id @default(autoincrement())
+  requesterId BigInt        @map("requester_id")
+  recipientId BigInt        @map("recipient_id")
+  courseId    BigInt        @map("course_id")
+  status      RequestStatus @default(PENDING)
+  requestedAt DateTime      @default(now()) @map("requested_at") @db.Timestamptz
+  respondedAt DateTime?     @map("responded_at") @db.Timestamptz
+  requester   Student @relation("Requester", fields: [requesterId], references: [id])
+  recipient   Student @relation("Recipient", fields: [recipientId], references: [id])
+  course      Course  @relation(fields: [courseId], references: [id])
+  @@index([courseId, status])
+  @@map("match_request")
+}
+
+model StudyGroup {
+  id       BigInt   @id @default(autoincrement())
+  courseId BigInt   @map("course_id")
+  formedAt DateTime @default(now()) @map("formed_at") @db.Timestamptz
+  course   Course   @relation(fields: [courseId], references: [id])
+  members  GroupMembership[]
+  reviews  PeerReview[]
+  @@unique([id, courseId])
+  @@map("study_group")
+}
+
+model GroupMembership {
+  groupId   BigInt     @map("group_id")
+  studentId BigInt     @map("student_id")
+  courseId  BigInt     @map("course_id")
+  group     StudyGroup @relation(fields: [groupId, courseId], references: [id, courseId])
+  student   Student    @relation(fields: [studentId], references: [id])
+  @@id([groupId, studentId])
+  @@unique([studentId, courseId])
+  @@map("group_membership")
+}
+
+model PeerReview {
+  id          BigInt   @id @default(autoincrement())
+  reviewerId  BigInt   @map("reviewer_id")
+  revieweeId  BigInt   @map("reviewee_id")
+  groupId     BigInt   @map("group_id")
+  submittedAt DateTime @default(now()) @map("submitted_at") @db.Timestamptz
+  reviewer    Student    @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee    Student    @relation("Reviewee", fields: [revieweeId], references: [id])
+  group       StudyGroup @relation(fields: [groupId], references: [id])
+  ratings     RatingCriterion[]
+  @@unique([reviewerId, revieweeId, groupId])
+  @@index([revieweeId])
+  @@map("peer_review")
+}
+
+model RatingCriterion {
+  reviewId     BigInt     @map("review_id")
+  criteriaName String     @map("criteria_name")
+  rating       Int        @db.SmallInt
+  review       PeerReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  @@id([reviewId, criteriaName])
+  @@map("rating_criterion")
+}
