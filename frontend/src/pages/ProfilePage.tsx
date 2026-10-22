@@ -46,9 +46,30 @@ export function ProfilePage() {
 
 
   function handleSave() {
+    if (blocks.length === 0) {
+      setError('Add at least one free time slot so we can find matches.');
+      setSaved(false);
+      return;
+    }
+    if (blocks.some((b) => b.endMinute <= b.startMinute)) {
+      setError('Each end time must be after its start time.');
+      setSaved(false);
+      return;
+    }
+
+    const unique = blocks.filter(
+      (b, i) =>
+        blocks.findIndex(
+          (o) => o.weekday === b.weekday && o.startMinute === b.startMinute && o.endMinute === b.endMinute,
+        ) === i,
+    );
+    setBlocks(unique);
+    
+    setError(null);
     // TODO: send the profile to the backend once the profile endpoint exists
     setSaved(true);
   }
+
 
     return (
     <section>
