@@ -27,7 +27,10 @@ export const envSchema = z.object({
   CORS_ORIGIN: commaList.default(['http://localhost:5173', 'http://localhost:4173']),
   // Requests per IP per 15 minutes on /api (health checks don't count)
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
-  // DATABASE_URL: z.url(),  // add when the database module is wired in
+  DATABASE_URL: z.string().optional(),
+  // Matching reads the short mock list in matching/mockData.ts instead of Postgres.
+  // Left unset, it is on only when there is no DATABASE_URL.
+  USE_MOCK_DATA: z.enum(['true', 'false']).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -56,4 +59,5 @@ export const config = {
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : env.NODE_ENV === 'development' ? 'debug' : 'info'),
   corsOrigins: env.CORS_ORIGIN,
   rateLimitMax: env.RATE_LIMIT_MAX,
+  useMockData: env.USE_MOCK_DATA ? env.USE_MOCK_DATA === 'true' : !env.DATABASE_URL,
 };

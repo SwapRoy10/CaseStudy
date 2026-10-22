@@ -9,6 +9,7 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 const server = createApp().listen(config.port, () => {
   logger.info(`CaseStudy API listening on http://localhost:${config.port}/api`);
+  logger.info(config.useMockData ? 'Matching is using the mock student list' : 'Matching is reading from Postgres');
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {
