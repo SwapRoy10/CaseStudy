@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { AvailabilityBlock, CandidateSummary } from '../types/api';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -18,6 +19,7 @@ function interval(b: AvailabilityBlock) {
 
 // Limited view only: no name or contact details until a match is accepted.
 export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary; rank: number }) {
+    const [requested, setRequested] = useState(false);
   return (
     <li className="card">
       <div className="card-head">
@@ -36,6 +38,16 @@ export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary
           <li key={`${b.weekday}-${b.startMinute}`}>{interval(b)}</li>
         ))}
       </ul>
+            {requested ? (
+        <p className="request-sent">
+          Request sent ✓{' '}
+          <button onClick={() => setRequested(false)}>Cancel</button>
+        </p>
+      ) : (
+        <button className="request-btn" onClick={() => setRequested(true)}>
+          Request to study together
+        </button>
+      )}
     </li>
   );
 }
