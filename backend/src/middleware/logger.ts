@@ -30,6 +30,8 @@ const fullUrl = (req: { url?: string; originalUrl?: string }) => req.originalUrl
 // One log line per request with a request id; attaches req.log for handlers.
 export const requestLogger = pinoHttp({
   logger,
+  // Reuse the caller's id if they sent one, and send it back in the response, so a
+  // failed request in the browser can be matched to its exact line in the server log
   genReqId: (req, res) => {
     const id = (req.headers['x-request-id'] as string | undefined) ?? randomUUID();
     res.setHeader('X-Request-Id', id);
