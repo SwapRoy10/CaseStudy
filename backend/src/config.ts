@@ -35,6 +35,7 @@ export const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+// Separate from the startup code below so tests can feed it fake environments.
 export function parseEnv(source: NodeJS.ProcessEnv): Env {
   const result = envSchema.safeParse(source);
   if (!result.success) {
@@ -56,8 +57,11 @@ try {
 export const config = {
   env: env.NODE_ENV,
   port: env.PORT,
+  // quiet tests, chatty dev, normal production, unless LOG_LEVEL says otherwise
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : env.NODE_ENV === 'development' ? 'debug' : 'info'),
   corsOrigins: env.CORS_ORIGIN,
   rateLimitMax: env.RATE_LIMIT_MAX,
+  // Explicit setting wins; otherwise no database means mock data, so the demo
+  // and tests run on any laptop without Postgres
   useMockData: env.USE_MOCK_DATA ? env.USE_MOCK_DATA === 'true' : !env.DATABASE_URL,
 };

@@ -19,6 +19,7 @@ export function validate(schemas: Schemas): RequestHandler {
 
       const result = schema.safeParse(req[part]);
       if (!result.success) {
+        // Report one problem at a time; it's enough for the user to fix and resend
         const issue = result.error.issues[0];
         const where = issue.path.length ? `${issue.path.join('.')}: ` : '';
         next(new ApiError(400, 'VALIDATION', `${where}${issue.message}`));

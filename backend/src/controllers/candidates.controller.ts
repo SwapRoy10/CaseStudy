@@ -11,6 +11,7 @@ import { findCandidates } from '../matching/findCandidates';
 export async function getCandidates(_req: Request, res: Response) {
   const { courseId } = res.locals.params as { courseId: string };
 
+  // From the session, never the URL, so nobody can request another student's matches
   const studentId: string = res.locals.studentId;
   if (!(await isEnrolled(studentId, courseId))) {
     throw new StateConflictError('NOT_ENROLLED', 'You are not enrolled in this course.');

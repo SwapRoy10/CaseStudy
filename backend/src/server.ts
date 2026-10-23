@@ -31,6 +31,8 @@ function shutdown(signal: string) {
     logger.info('Server closed');
     process.exit(0);
   });
+  // close() waits for open connections; browsers keep idle ones alive, which
+  // would make every Ctrl+C hit the 10s timeout
   server.closeIdleConnections();
 
   setTimeout(() => {
@@ -41,6 +43,8 @@ function shutdown(signal: string) {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+// A promise nobody handled means the app is in an unknown state. Crash loudly
+// rather than keep serving possibly wrong results.
 process.on('unhandledRejection', (reason) => {
   logger.fatal({ err: reason }, 'Unhandled promise rejection');
   process.exit(1);

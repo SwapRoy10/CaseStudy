@@ -36,7 +36,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     return;
   }
 
-  // Expected business-rule failures, e.g. NO_PROFILE from findCandidates.
+  // Expected business-rule failures, e.g. NO_PROFILE or NOT_ENROLLED. 409 means
+  // "your request is fine, but the current state doesn't allow it", which tells
+  // the frontend to show the message instead of offering a retry.
   // The message is written for the user, so it's safe to pass through.
   if (err instanceof StateConflictError) {
     res.status(409).json({ error: { code: 'STATE_CONFLICT', reason: err.reason, message: err.message } });
