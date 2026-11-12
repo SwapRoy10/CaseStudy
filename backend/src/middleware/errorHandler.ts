@@ -74,7 +74,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   }
 
   // anything else (failed db read, bad data from the db layer) is UNAVAILABLE.
-  // log the detail server-side only (tagged with the request id); it can contain
+  // log the detail server-side only (tagged with the request id). it can contain
   // ids (sdd 9.8) and the client doesn't need it.
   req.log.error({ err }, 'Unhandled request error');
   res.status(503).json({

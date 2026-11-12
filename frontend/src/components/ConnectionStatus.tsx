@@ -23,7 +23,7 @@ export function ConnectionStatus() {
     };
   }, []);
 
-  const label = { checking: 'Connecting…', up: 'API connected', down: 'API offline' }[status];
+  const label = { checking: 'Connecting...', up: 'API connected', down: 'API offline' }[status];
   return (
     <span className={`status status-${status}`} role="status">
       <span className="status-dot" aria-hidden="true" />

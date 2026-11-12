@@ -31,7 +31,7 @@ function shutdown(signal: string) {
     logger.info('Server closed');
     process.exit(0);
   });
-  // close() waits for open connections; browsers keep idle ones alive, which
+  // close() waits for open connections, and browsers keep idle ones alive, which
   // would make every ctrl+c hit the 10s timeout
   server.closeIdleConnections();
 

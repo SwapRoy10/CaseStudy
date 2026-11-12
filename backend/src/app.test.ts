@@ -41,7 +41,7 @@ describe('GET /api/courses/:courseId/candidates', () => {
     expect(res.status).toBe(200);
     expect(res.body.courseId).toBe('1');
     const ids = res.body.candidates.map((c: { candidateId: string }) => c.candidateId);
-    // 102 has the most overlap with 101; 103 and 106 tie on 1 block.
+    // 102 has the most overlap with 101, 103 and 106 tie on 1 block.
     // 104 (other grade goal), 105 (no overlap), 107 (no availability) are filtered out.
     expect(ids[0]).toBe('102');
     expect([...ids].sort()).toEqual(['102', '103', '106']);

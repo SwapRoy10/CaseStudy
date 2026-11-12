@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedSampleData } from '../src/seedSampleData';
 
-// run with `npx prisma db seed` (or `npm run db:reset` from the repo root).
+// run with `npx prisma db seed` (or `npm run db:seed` from the repo root).
 // the actual data is in src/sampleData.ts
 const prisma = new PrismaClient();
 

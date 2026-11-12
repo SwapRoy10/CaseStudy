@@ -13,7 +13,7 @@ export const logger = pino({
     config.env === 'development'
       ? {
           target: 'pino-pretty',
-          // one line per request in the dev terminal; production keeps full json
+          // one line per request in the dev terminal, production keeps full json
           options: { colorize: true, translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,req,res,responseTime' },
         }
       : undefined,
@@ -27,7 +27,7 @@ export const logger = pino({
 // express rewrites req.url inside mounted routers (/api is stripped), so log originalUrl
 const fullUrl = (req: { url?: string; originalUrl?: string }) => req.originalUrl ?? req.url;
 
-// one log line per request with a request id; attaches req.log for handlers.
+// one log line per request with a request id, and attaches req.log for handlers.
 export const requestLogger = pinoHttp({
   logger,
   // reuse the caller's id if they sent one, and send it back in the response, so a
@@ -37,7 +37,7 @@ export const requestLogger = pinoHttp({
     res.setHeader('X-Request-Id', id);
     return id;
   },
-  // health checks run every 10s from the frontend; don't drown the terminal
+  // health checks run every 10s from the frontend, so don't drown the terminal
   autoLogging: { ignore: (req) => req.url === '/api/health' },
   customSuccessMessage: (req, res, ms) => `${req.method} ${fullUrl(req)} ${res.statusCode} ${Math.round(ms)}ms`,
   customErrorMessage: (req, res) => `${req.method} ${fullUrl(req)} ${res.statusCode} failed`,

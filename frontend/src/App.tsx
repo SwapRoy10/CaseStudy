@@ -100,7 +100,7 @@ export default function App() {
             <p>{rosterError}</p>
           </div>
         )}
-        {!rosterError && !course && <p className="muted">Loading your courses…</p>}
+        {!rosterError && !course && <p className="muted">Loading your courses...</p>}
         {course && student && page === 'matches' && (
           <CandidatesPage studentId={studentId} courseId={courseId} studentName={student.name} />
         )}

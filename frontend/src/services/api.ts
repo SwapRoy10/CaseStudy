@@ -3,7 +3,7 @@ import type { ApiErrorBody, CandidatesResponse, DemoCourse, Id } from '../types/
 // every backend call goes through this file, so the url, headers and error
 // handling live in one place. pages call api.getCandidates(...) etc.
 
-// empty = same origin; the vite proxy forwards /api to the backend.
+// empty means same origin, the vite proxy forwards /api to the backend.
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
 // demo stand-in for real login: the backend reads the student from this header.

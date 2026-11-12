@@ -11,7 +11,7 @@ export interface ScoredCandidate {
   overlapCount: number;
 }
 
-// stage 1 - Match.Filter.Grade
+// stage 1: Match.Filter.Grade
 // also drops the requester, since they're in the course profile list too.
 export function filterByGradeGoal(requester: Profile, classmates: Profile[]): Profile[] {
   return classmates.filter(
@@ -19,7 +19,7 @@ export function filterByGradeGoal(requester: Profile, classmates: Profile[]): Pr
   );
 }
 
-// stage 2 - Match.Filter.Availability
+// stage 2: Match.Filter.Availability
 export function filterByAvailability(requester: Profile, candidates: Profile[]): ScoredCandidate[] {
   // normalize so a duplicate block in the requester's profile can't count twice
   const requesterBlocks = normalizeBlocks(requester.blocks);
@@ -41,12 +41,12 @@ export function filterByAvailability(requester: Profile, candidates: Profile[]):
   return result;
 }
 
-// stage 3 - Match.Rank.Overlap, most overlap first
+// stage 3: Match.Rank.Overlap, most overlap first
 export function rankByOverlap(candidates: ScoredCandidate[]): ScoredCandidate[] {
   return [...candidates].sort((a, b) => b.overlapCount - a.overlapCount);
 }
 
-// stage 4 - Match.Tie.WorkStyle
+// stage 4: Match.Tie.WorkStyle
 // expects the list already sorted by stage 3. only reorders within each overlap-count group.
 export function tieBreakByWorkStyle(requester: Profile, candidates: ScoredCandidate[]): ScoredCandidate[] {
   const groups = splitTies(candidates, (a, b) => a.overlapCount === b.overlapCount);
@@ -56,7 +56,7 @@ export function tieBreakByWorkStyle(requester: Profile, candidates: ScoredCandid
   );
 }
 
-// stage 5 - Match.Tie.Random
+// stage 5: Match.Tie.Random
 // shuffles candidates still tied on overlap count and work style.
 // rng is a parameter so tests can control the order.
 export function randomTieBreak(

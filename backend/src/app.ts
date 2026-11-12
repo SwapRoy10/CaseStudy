@@ -17,7 +17,7 @@ export function createApp() {
   app.use(requestLogger);
   app.use(helmet()); // standard security headers (no sniffing, no framing, etc.)
   app.use(cors({ origin: config.corsOrigins })); // only our own frontend, not any site
-  app.use(express.json({ limit: '100kb' })); // profiles are small; cap bodies so a huge one can't tie up the server
+  app.use(express.json({ limit: '100kb' })); // profiles are small, so cap bodies so a huge one can't tie up the server
 
   // rate limit only the api. unknown paths fall through to notFound below.
   app.use('/api', createApiRateLimiter(), apiRouter);

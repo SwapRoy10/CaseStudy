@@ -23,7 +23,7 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
         if (cancelled) return;
         if (err instanceof ApiRequestError) {
           // CONFLICT messages (e.g. NO_PROFILE) are written for the user.
-          // network or server problems are worth retrying; conflicts aren't.
+          // network or server problems are worth retrying, conflicts aren't.
           const retryable = ['NETWORK', 'UNAVAILABLE', 'RATE_LIMITED'].includes(err.code);
           setState({ kind: 'error', message: err.message, retryable });
         } else {
@@ -42,7 +42,7 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
 
       <HowMatchingWorks />
 
-      {state.kind === 'loading' && <p className="muted">Finding classmates…</p>}
+      {state.kind === 'loading' && <p className="muted">Finding classmates...</p>}
 
       {state.kind === 'error' && (
         <div className="notice" role="alert">

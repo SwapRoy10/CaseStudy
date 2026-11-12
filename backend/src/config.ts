@@ -22,7 +22,7 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
-  // only matters when the frontend calls the api directly; in dev and the demo
+  // only matters when the frontend calls the api directly. in dev and the demo
   // the vite proxy makes requests same-origin.
   CORS_ORIGIN: commaList.default(['http://localhost:5173', 'http://localhost:4173']),
   // requests per IP per 15 minutes on /api (health checks don't count)
@@ -61,7 +61,7 @@ export const config = {
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : env.NODE_ENV === 'development' ? 'debug' : 'info'),
   corsOrigins: env.CORS_ORIGIN,
   rateLimitMax: env.RATE_LIMIT_MAX,
-  // explicit setting wins; otherwise no database means mock data, so the demo
+  // explicit setting wins, otherwise no database means mock data, so the demo
   // and tests run on any laptop without postgres
   useMockData: env.USE_MOCK_DATA ? env.USE_MOCK_DATA === 'true' : !env.DATABASE_URL,
 };

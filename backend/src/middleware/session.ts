@@ -7,7 +7,7 @@ import { idString } from './validate';
 //
 // demo stand-in: until real login exists, the frontend sends the signed-in
 // student's id in an X-Student-Id header. replace this middleware with real
-// session/auth handling; everything downstream only reads res.locals.studentId,
+// session/auth handling. everything downstream only reads res.locals.studentId,
 // so nothing else has to change.
 
 export const requireStudent: RequestHandler = (req, res, next) => {
