@@ -111,16 +111,24 @@ A list of everyone who passed both filters, in rank order, with no limit on how 
 
 `npm test` runs the matching tests along with the API tests. Over HTTP, matching is served at `GET /api/courses/:courseId/candidates` (see [Running the server](#running-the-server) and [`docs/api/README.md`](../docs/api/README.md)).
 
+| Command | What it does |
+|---|---|
+| `npm test` | Every test. The ones that need Postgres skip themselves unless the database is up (see [`database/README.md`](../database/README.md)) |
+| `npm run test:coverage` | Same tests, plus statement, branch, function and line coverage. Fails under 90% (80% for branches). Needs the database. Report in `coverage/index.html` |
+| `npm run test:mutation` | Stryker mutation testing on the matching code. It changes the code in small ways and checks that a test fails each time. Report in `reports/mutation/mutation.html` |
+
+The matching cases from the functional testing doc are in [`src/matching/functional.test.ts`](src/matching/functional.test.ts), with the test id in a comment above each one.
+
 ### Waiting on other parts
 
 Matching reads profiles, the roster and review averages from Postgres through [`src/matching/data.ts`](src/matching/data.ts). The tests swap that file for [`mockData.ts`](src/matching/mockData.ts). Still open:
 
 | Needed from | What matching needs | Where it plugs in |
 |---|---|---|
-| Database | ~~Real queries for profiles and enrollment~~ **Done**: `getProfile`, `getCourseProfiles` and `isEnrolled` read the Prisma tables, with blocks in the same query | [`src/matching/data.ts`](src/matching/data.ts) |
+| Database | ~~Real queries for profiles and enrollment~~ **Done**: `getCourseProfiles` and `isEnrolled` read the Prisma tables, with blocks in the same query | [`src/matching/data.ts`](src/matching/data.ts) |
 | Peer review | ~~A real average~~ **Done for now**: `getAverages` computes it straight from `rating_criterion`. Swap it for the review module's own function if they add one | [`src/matching/data.ts`](src/matching/data.ts) |
 | API layer | ~~A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors~~ **Done**: `GET /api/courses/:courseId/candidates` | [`src/controllers/candidates.controller.ts`](src/controllers/candidates.controller.ts) |
 | Match requests | A check before saving a request that the recipient is still eligible | Calls `isEligible` in `src/matching/pipeline.ts` |
-| Profiles | Cleaning up blocks the same way when a profile is saved | Calls `normalizeBlocks` in `src/matching/availability.ts` |
+| Profiles | ~~Cleaning up blocks the same way when a profile is saved~~ **Done**: `normalizeBlocks` in `src/profile/profile.schema.ts` splits midnight blocks and then merges with the matching rule. Profile routes still need wiring in `src/routes/index.ts` | `src/profile/profile.schema.ts` |
 
 `findCandidates` still checks the data it gets back, so if a real query returns rows in the wrong shape, `findCandidates` throws an error instead of quietly giving wrong matches.

@@ -1,6 +1,6 @@
 import { AvailabilityBlock } from './types';
 
-// Bounds from sdd 5.1 / 6.2. Profiles can use this when saving too.
+// bounds from sdd 5.1 / 6.2. profiles can use this when saving too.
 export function isValidBlock(b: AvailabilityBlock): boolean {
   return (
     Number.isInteger(b.weekday) &&
@@ -14,7 +14,7 @@ export function isValidBlock(b: AvailabilityBlock): boolean {
   );
 }
 
-// Clipped overlap of two blocks (sdd 8.2), or null if they don't share any time.
+// clipped overlap of two blocks (sdd 8.2), or null if they don't share any time.
 export function intersect(a: AvailabilityBlock, b: AvailabilityBlock): AvailabilityBlock | null {
   if (a.weekday !== b.weekday) return null;
 
@@ -27,17 +27,17 @@ export function intersect(a: AvailabilityBlock, b: AvailabilityBlock): Availabil
   return { weekday: a.weekday, startMinute: start, endMinute: end };
 }
 
-// Cleans up a student's saved blocks before counting: duplicates removed and
-// overlapping blocks on the same day merged. Touching blocks (9:00-9:30 and
+// cleans up a student's saved blocks before counting: duplicates removed and
+// overlapping blocks on the same day merged. touching blocks (9:00-9:30 and
 // 9:30-10:00) are kept separate on purpose so each 30 min block counts toward
-// the overlap count. NOTE: the sdd glossary ("canonical availability") says to
-// merge touching blocks too, we decided not to. Profiles should use this same
-// function when saving (sdd 5.3).
+// the overlap count. the team decided this on purpose, the sdd glossary
+// ("canonical availability") still says to merge touching blocks and needs
+// updating. profile saving uses this same function (sdd 5.3).
 export function normalizeBlocks(blocks: AvailabilityBlock[]): AvailabilityBlock[] {
   return mergeIntervals(blocks);
 }
 
-// Merges overlapping intervals on the same day (sdd 8.2). Touching ones stay separate.
+// merges overlapping intervals on the same day (sdd 8.2). touching ones stay separate.
 export function mergeIntervals(intervals: AvailabilityBlock[]): AvailabilityBlock[] {
   const sorted = [...intervals].sort((a, b) => a.weekday - b.weekday || a.startMinute - b.startMinute);
 
@@ -59,9 +59,9 @@ export interface SharedResult {
 }
 
 // overlapCount is the number of requester blocks that hit at least one
-// candidate block. A requester block overlapping two candidate blocks still
+// candidate block. a requester block overlapping two candidate blocks still
 // only counts once (sdd 8.2, glossary "overlap count").
-// Expects requesterBlocks to already be normalized.
+// expects requesterBlocks to already be normalized.
 export function sharedIntersections(
   requesterBlocks: AvailabilityBlock[],
   candidateBlocks: AvailabilityBlock[]
