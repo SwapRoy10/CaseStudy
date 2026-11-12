@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Integration smoke test: talks to the FRONTEND server, so a pass proves the
+// integration smoke test: talks to the FRONTEND server, so a pass proves the
 // page is served AND /api requests reach the backend through the proxy.
 //
 //   node scripts/smoke.mjs                         # dev servers (npm run dev)
 //   node scripts/smoke.mjs http://localhost:4173   # demo build (npm run demo)
 //
-// Waits up to 60s for the servers to come up, then exits 0 (pass) or 1 (fail).
+// waits up to 60s for the servers to come up, then exits 0 (pass) or 1 (fail).
 
 const base = (process.argv[2] ?? 'http://localhost:5173').replace(/\/$/, '');
 const deadline = Date.now() + 60_000;
