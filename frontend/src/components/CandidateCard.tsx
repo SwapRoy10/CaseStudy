@@ -27,7 +27,7 @@ export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary
       <div className="card-head">
         <span className="rank">#{rank}</span>
         <span className="rating">
-          {candidate.reviewAverage === null ? 'Not yet rated' : `Rated ${candidate.reviewAverage.toFixed(1)} out of 5`}
+          {`Rated ${(candidate.reviewAverage ?? 0).toFixed(1)} out of 5`}
         </span>
       </div>
       <p className="tags">
