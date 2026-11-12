@@ -3,14 +3,14 @@ import type { AvailabilityBlock, GradeGoal, WorkStyle } from '../types/api';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// 600 -> "10:00"
+// turns 600 into "10:00"
 function toTime(minutes: number) {
   const h = String(Math.floor(minutes / 60)).padStart(2, '0');
   const m = String(minutes % 60).padStart(2, '0');
   return `${h}:${m}`;
 }
 
-// "10:00" -> 600
+// turns "10:00" into 600
 function toMinutes(time: string) {
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
@@ -149,7 +149,7 @@ export function ProfilePage() {
       <button className="save-btn" onClick={handleSave}>
         Save profile
       </button>
-      {saved && <p className="request-sent">Profile saved ✓</p>}
+      {saved && <p className="request-sent">Profile saved</p>}
     </section>
   );
 

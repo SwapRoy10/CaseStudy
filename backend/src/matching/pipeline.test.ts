@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isEligible, rankCandidates } from './pipeline';
 import { block, ids, profile } from './testUtils';
 
-// requester is free Mon 9-11, Tue 13-15, Thu 18-20
+// requester is free mon 9-11, tue 13-15, thu 18-20
 const me = profile('me', 'A_TRACK', 'GROUP', [block(1, 9, 11), block(2, 13, 15), block(4, 18, 20)]);
 
 describe('rankCandidates', () => {
@@ -45,7 +45,7 @@ describe('rankCandidates', () => {
   });
 
   it('shuffle is roughly uniform', () => {
-    // 3 fully tied candidates -> 6 possible orders, each should show up about 1/6 of the time
+    // 3 fully tied candidates means 6 possible orders, each should show up about 1/6 of the time
     const classmates = ['x', 'y', 'z'].map((id) => profile(id, 'A_TRACK', 'GROUP', [block(1, 9, 10)]));
     const counts: Record<string, number> = {};
 

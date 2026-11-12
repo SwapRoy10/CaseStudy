@@ -14,18 +14,20 @@ function time(minutes: number) {
 }
 
 function interval(b: AvailabilityBlock) {
-  return `${DAYS[b.weekday]} ${time(b.startMinute)}–${time(b.endMinute)}`;
+  return `${DAYS[b.weekday]} ${time(b.startMinute)}-${time(b.endMinute)}`;
 }
 
-// Limited view only: no name or contact details until a match is accepted.
+// limited view only: no name or contact details until a match is accepted.
 export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary; rank: number }) {
-    const [requested, setRequested] = useState(false);
+  // not saved anywhere yet, match requests aren't built on the backend
+  const [requested, setRequested] = useState(false);
+
   return (
     <li className="card">
       <div className="card-head">
         <span className="rank">#{rank}</span>
         <span className="rating">
-          {candidate.reviewAverage === null ? 'Not yet rated' : `★ ${candidate.reviewAverage.toFixed(1)}`}
+          {`Rated ${(candidate.reviewAverage ?? 0).toFixed(1)} out of 5`}
         </span>
       </div>
       <p className="tags">
@@ -38,9 +40,9 @@ export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary
           <li key={`${b.weekday}-${b.startMinute}`}>{interval(b)}</li>
         ))}
       </ul>
-            {requested ? (
+      {requested ? (
         <p className="request-sent">
-          Request sent ✓{' '}
+          Request sent{' '}
           <button onClick={() => setRequested(false)}>Cancel</button>
         </p>
       ) : (

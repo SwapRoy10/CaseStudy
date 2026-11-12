@@ -2,7 +2,7 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './middleware/logger';
 
-// Graceful shutdown adapted from the template: on Ctrl+C / SIGTERM, stop taking
+// graceful shutdown adapted from the template: on ctrl+c / SIGTERM, stop taking
 // new connections, let in-flight requests finish, then exit (forced after 10s).
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -27,10 +27,12 @@ function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down`);
 
   server.close(async () => {
-    // TODO (database module): close the DB pool / Prisma client here
+    // TODO (database module): close the db pool / prisma client here
     logger.info('Server closed');
     process.exit(0);
   });
+  // close() waits for open connections, and browsers keep idle ones alive, which
+  // would make every ctrl+c hit the 10s timeout
   server.closeIdleConnections();
 
   setTimeout(() => {
@@ -41,6 +43,8 @@ function shutdown(signal: string) {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+// a promise nobody handled means the app is in an unknown state. crash loudly
+// rather than keep serving possibly wrong results.
 process.on('unhandledRejection', (reason) => {
   logger.fatal({ err: reason }, 'Unhandled promise rejection');
   process.exit(1);

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Integration smoke test: talks to the FRONTEND server, so a pass proves the
-// page is served AND /api requests reach the backend through the proxy.
+// integration smoke test. it talks to the frontend server, so a pass proves the
+// page is served and /api requests reach the backend through the proxy.
 //
 //   node scripts/smoke.mjs                         # dev servers (npm run dev)
 //   node scripts/smoke.mjs http://localhost:4173   # demo build (npm run demo)
 //
-// Waits up to 60s for the servers to come up, then exits 0 (pass) or 1 (fail).
+// waits up to 60s for the servers to come up, then exits 0 (pass) or 1 (fail).
 
 const base = (process.argv[2] ?? 'http://localhost:5173').replace(/\/$/, '');
 const deadline = Date.now() + 60_000;
@@ -57,7 +57,7 @@ function assert(ok, msg) {
 try {
   await waitForServer();
 } catch (err) {
-  console.error(`✗ ${err.message}`);
+  console.error(`fail: ${err.message}`);
   process.exit(1);
 }
 
@@ -65,10 +65,10 @@ let failed = 0;
 for (const [name, run] of checks) {
   try {
     await run();
-    console.log(`✓ ${name}`);
+    console.log(`ok: ${name}`);
   } catch (err) {
     failed++;
-    console.log(`✗ ${name}: ${err.message}`);
+    console.log(`fail: ${name}: ${err.message}`);
   }
 }
 console.log(failed ? `\n${failed} check(s) failed` : `\nAll ${checks.length} checks passed against ${base}`);

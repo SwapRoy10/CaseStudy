@@ -1,6 +1,6 @@
 import { StateConflictError } from './errors';
 import { CandidateSummary, Id, Profile } from './types';
-import { getAverages, getCourseProfiles, getProfile } from './data';
+import { getAverages, getCourseProfiles } from './data';
 import { isValidBlock } from './availability';
 import { rankCandidates } from './pipeline';
 import { ScoredCandidate } from './stages';
@@ -9,26 +9,27 @@ const GRADE_GOALS: string[] = ['A_TRACK', 'PASS_TRACK'];
 const WORK_STYLES: string[] = ['SOLO', 'GROUP'];
 
 // findCandidates (sdd 6.3.4). studentId should come from the session.
-// Returns every candidate that passed both filters in rank order, no cap (sdd 8.1 step 6).
-// Empty list just means no matches.
+// returns every candidate that passed both filters in rank order, no cap (sdd 8.1 step 6).
+// an empty list just means no matches.
 export async function findCandidates(
   studentId: Id,
   courseId: Id,
   rng: () => number = Math.random
 ): Promise<CandidateSummary[]> {
-  // TODO: do both reads in one read-only transaction so they see the same snapshot
-  const requester = await getProfile(studentId, courseId);
-  if (!requester || requester.blocks.length === 0) {
-    throw new StateConflictError('NO_PROFILE', 'Complete your profile to see matches.');
-  }
-  checkProfile(requester, courseId);
-
+  // one query for the whole course, so the requester and their classmates all
+  // come from the same snapshot (sdd 3.3). the requester is in this list too,
+  // as long as they saved a profile with at least one free time
   const classmates = await getCourseProfiles(courseId);
   classmates.forEach((p) => checkProfile(p, courseId));
 
-  // a JOIN that returns one row per block would show the same person twice
+  // a join that returns one row per block would show the same person twice
   if (new Set(classmates.map((p) => p.studentId)).size !== classmates.length) {
     throw new Error(`duplicate profiles returned for course ${courseId}`);
+  }
+
+  const requester = classmates.find((p) => p.studentId === studentId);
+  if (!requester) {
+    throw new StateConflictError('NO_PROFILE', 'Complete your profile to see matches.');
   }
 
   const ranked = rankCandidates(requester, classmates, rng);
@@ -45,10 +46,10 @@ export async function findCandidates(
   });
 }
 
-// If the db layer hands back rows in the wrong shape (snake_case columns, 'A track'
+// if the db layer hands back rows in the wrong shape (snake_case columns, 'A track'
 // instead of A_TRACK, another course, bad blocks) matching would just quietly give
-// wrong results or an empty list. Throwing means it shows up as UNAVAILABLE and
-// gets logged instead (sdd 10.1, 10.3). Only ids in the message (sdd 9.8).
+// wrong results or an empty list. throwing means it shows up as UNAVAILABLE and
+// gets logged instead (sdd 10.1, 10.3). only ids go in the message (sdd 9.8).
 function checkProfile(p: Profile, courseId: Id) {
   const ok =
     typeof p.studentId === 'string' &&

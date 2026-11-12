@@ -16,6 +16,13 @@ describe('isValidBlock', () => {
     expect(isValidBlock(block(1, 23, 25))).toBe(false); // past midnight
   });
 
+  // the exact edges from sdd 5.1. mutation testing showed nothing checked these:
+  // saturday (6) is the last real day, and a block can't start before midnight
+  it('accepts saturday and rejects a start before midnight', () => {
+    expect(isValidBlock(block(6, 9, 10))).toBe(true);
+    expect(isValidBlock({ weekday: 1, startMinute: -30, endMinute: 60 })).toBe(false);
+  });
+
   it('rejects missing or non-integer minutes', () => {
     expect(isValidBlock({ weekday: 1, startMinute: 540.5, endMinute: 600 })).toBe(false);
     // what a snake_case row from postgres would look like if nobody mapped it

@@ -2,14 +2,16 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { Id, Profile } from './types';
 
-// Postgres reads for matching (SDD 5.4). Ids are bigint in the database but
+// postgres reads for matching (sdd 5.4). ids are bigint in the database but
 // strings everywhere else, so they get converted here and nowhere else.
 
 const withBlocks = { blocks: { orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }] } } satisfies Prisma.ProfileInclude;
 
 type ProfileRow = Prisma.ProfileGetPayload<{ include: typeof withBlocks }>;
 
-function toProfile(row: ProfileRow): Profile {
+// exported so the match request code can turn rows it reads inside its own
+// transaction into the same profile shape and call isEligible on them
+export function toProfile(row: ProfileRow): Profile {
   return {
     profileId: row.id.toString(),
     studentId: row.studentId.toString(),
@@ -28,16 +30,8 @@ export async function isEnrolled(studentId: Id, courseId: Id): Promise<boolean> 
   return row !== null;
 }
 
-export async function getProfile(studentId: Id, courseId: Id): Promise<Profile | null> {
-  const row = await prisma.profile.findUnique({
-    where: { studentId_courseId: { studentId: BigInt(studentId), courseId: BigInt(courseId) } },
-    include: withBlocks,
-  });
-  return row && toProfile(row);
-}
-
-// A profile only exists for an enrolled student, so the roster check is built in.
-// Blocks come back in the same query, not one read per student (SDD 5.4).
+// a profile only exists for an enrolled student, so the roster check is built in.
+// blocks come back in the same query, not one read per student (sdd 5.4).
 export async function getCourseProfiles(courseId: Id): Promise<Profile[]> {
   const rows = await prisma.profile.findMany({
     where: { courseId: BigInt(courseId), blocks: { some: {} } },
@@ -46,8 +40,8 @@ export async function getCourseProfiles(courseId: Id): Promise<Profile[]> {
   return rows.map(toProfile);
 }
 
-// Average over every rating a student has received, the same figure the profile
-// page shows. Students with no reviews are left out of the map.
+// average over every rating a student has received, the same figure the profile
+// page shows. students with no reviews are left out of the map.
 export async function getAverages(studentIds: Id[]): Promise<Map<Id, number>> {
   if (studentIds.length === 0) return new Map();
 

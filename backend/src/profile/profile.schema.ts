@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeBlocks as mergeLikeMatching } from '../matching/availability';
 
 export const blockSchema = z
   .object({
@@ -17,9 +18,11 @@ export const profileInputSchema = z.object({
 export type Block = z.infer<typeof blockSchema>;
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 
-// A block that ends before it starts crosses midnight: split it into two days.
+// a block that ends before it starts crosses midnight, so split it into two days.
+// after that, duplicates and overlapping blocks get merged with the same rule
+// matching uses, so what we save is exactly what matching counts (sdd 5.3)
 export function normalizeBlocks(blocks: Block[]): Block[] {
-  return blocks.flatMap((b) =>
+  const split = blocks.flatMap((b) =>
     b.endMinute > b.startMinute
       ? [b]
       : [
@@ -27,4 +30,5 @@ export function normalizeBlocks(blocks: Block[]): Block[] {
           { weekday: (b.weekday + 1) % 7, startMinute: 0, endMinute: b.endMinute },
         ],
   );
+  return mergeLikeMatching(split);
 }

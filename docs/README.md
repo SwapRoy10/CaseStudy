@@ -11,7 +11,7 @@ This page explains the matching code in [`backend/src/matching/`](../backend/src
 | The five matching rules ([`stages.ts`](../backend/src/matching/stages.ts), [`pipeline.ts`](../backend/src/matching/pipeline.ts)) | Working, unit tested |
 | Availability overlap math ([`availability.ts`](../backend/src/matching/availability.ts)) | Working, unit tested |
 | `findCandidates` with input checks ([`findCandidates.ts`](../backend/src/matching/findCandidates.ts)) | Working, tested against mock data |
-| Profile and review data ([`data.ts`](../backend/src/matching/data.ts)) | Working: Prisma queries for profiles, roster and review averages. Not yet run against a live database. The tests use [`mockData.ts`](../backend/src/matching/mockData.ts) |
+| Profile and review data ([`data.ts`](../backend/src/matching/data.ts)) | Working: Prisma queries for course profiles, roster and review averages. Not yet run against a live database. The tests use [`mockData.ts`](../backend/src/matching/mockData.ts) |
 | HTTP route for matching | Working: `GET /api/courses/:courseId/candidates` ([`candidates.controller.ts`](../backend/src/controllers/candidates.controller.ts)), tested in [`app.test.ts`](../backend/src/app.test.ts) |
 | `isEligible` check for match requests | Written and tested, but nothing calls it yet |
 
@@ -26,8 +26,9 @@ You can run matching through the unit tests, or over HTTP with `npm run dev` fro
 | [`stages.ts`](../backend/src/matching/stages.ts) | One function per matching rule |
 | [`pipeline.ts`](../backend/src/matching/pipeline.ts) | `rankCandidates` runs the rules in order. Also `isEligible` |
 | [`findCandidates.ts`](../backend/src/matching/findCandidates.ts) | Entry point. Loads data, checks it, ranks, adds review averages |
-| [`data.ts`](../backend/src/matching/data.ts) | Postgres reads (`getProfile`, `getCourseProfiles`, `getAverages`, `isEnrolled`) |
+| [`data.ts`](../backend/src/matching/data.ts) | Picks the Postgres reads (`getCourseProfiles`, `getAverages`, `isEnrolled`) or the mock ones |
 | [`mockData.ts`](../backend/src/matching/mockData.ts) | In-memory version of the same functions for the tests |
+| [`functional.test.ts`](../backend/src/matching/functional.test.ts) | Matching cases from the functional testing doc, named by their test id (AVAIL-4, RANK-2, RAND-3, ORDER-1, ELIG-2 and so on) |
 | [`errors.ts`](../backend/src/matching/errors.ts) | `StateConflictError`. Matching only uses the `NO_PROFILE` reason |
 | [`testUtils.ts`](../backend/src/matching/testUtils.ts) | Test helpers. `block(1, 9, 9.5)` means Monday 9:00 to 9:30 |
 
@@ -35,13 +36,12 @@ You can run matching through the unit tests, or over HTTP with `npm run dev` fro
 
 `findCandidates(studentId, courseId, rng = Math.random)` in [`findCandidates.ts`](../backend/src/matching/findCandidates.ts):
 
-1. Load the requester's profile with `getProfile`. If there is no profile, or it has no availability blocks, throw `StateConflictError` with reason `NO_PROFILE`.
-2. Check the requester's profile data (see [Bad data checks](#bad-data-checks)).
-3. Load every profile in the course with `getCourseProfiles` and check each one.
-4. Throw if the same student shows up twice.
-5. Call `rankCandidates` in [`pipeline.ts`](../backend/src/matching/pipeline.ts), which runs the five rules below.
-6. Look up the review averages for all the ranked candidates at once with `getAverages`.
-7. Return a `CandidateSummary` for each one, in rank order.
+1. Load every profile in the course with `getCourseProfiles` and check each one (see [Bad data checks](#bad-data-checks)). This is one query, so the requester and classmates come from the same snapshot (SDD 3.3).
+2. Throw if the same student shows up twice.
+3. Find the requester in that list. The query only returns profiles with at least one free time, so if they aren't there they have no profile or no availability, and we throw `StateConflictError` with reason `NO_PROFILE`.
+4. Call `rankCandidates` in [`pipeline.ts`](../backend/src/matching/pipeline.ts), which runs the five rules below.
+5. Look up the review averages for all the ranked candidates at once with `getAverages`.
+6. Return a `CandidateSummary` for each one, in rank order.
 
 The review average is added only after ranking, so it can't change anyone's position.
 
@@ -249,14 +249,14 @@ If a data function itself throws (for example a failed read), the error is passe
 ### Things matching does not handle yet
 
 * The roster check lives in the route, not in `findCandidates`. The controller calls `isEnrolled` first and returns `NOT_ENROLLED`. The query in `getCourseProfiles` only returns people with saved profiles, which can only exist for enrolled students.
-* The two reads are not in one transaction yet (TODO in `findCandidates.ts`).
-* Review averages are looked up one at a time (TODO to batch it).
-* Blocks can't cross midnight. A block like 23:00 to 01:00 has to be saved as two blocks, otherwise it fails `isValidBlock`.
-* `normalizeBlocks` is meant to be used by profile saving too, but there is no profile saving code in the repo yet.
+* Blocks can't cross midnight inside matching. Profile saving splits a block like 23:00 to 01:00 into two days before it is stored, so matching never sees one.
+* Profile saving (`normalizeBlocks` in `backend/src/profile/profile.schema.ts`) now merges duplicate and overlapping blocks with the same matching function, as SDD 5.3 asks.
+* Touching blocks (9:00 to 9:30 and 9:30 to 10:00) stay separate on purpose so each one counts. The team decided to keep this, so the SDD glossary ("canonical availability") needs to be updated to match.
+* Nothing has been run against a real Postgres database yet.
 
 ## `isEligible`
 
-`isEligible(sender, recipient)` in [`pipeline.ts`](../backend/src/matching/pipeline.ts) returns `true` if the two profiles are in the same course, have the same grade goal and share some time. It returns `false` for yourself. It is meant for the match request code to call before saving a request, but nothing calls it yet.
+`isEligible(sender, recipient)` in [`pipeline.ts`](../backend/src/matching/pipeline.ts) returns `true` if the two profiles are in the same course, have the same grade goal and share some time. It returns `false` for yourself. It is meant for the match request code to call before saving a request, but nothing calls it yet because match requests aren't built. SDD 5.3 says `sendRequest` should lock both enrollment rows, read both profiles inside that transaction, turn them into `Profile` objects with `toProfile` from [`postgresData.ts`](../backend/src/matching/postgresData.ts), and call `isEligible` before inserting. If it returns false, throw `NO_LONGER_ELIGIBLE`.
 
 ## Running the tests
 
