@@ -11,7 +11,7 @@ Until real login exists, signed-in routes read the student id from an `X-Student
 Every error response has the same body:
 
 ```json
-{ "error": { "code": "STATE_CONFLICT", "reason": "NO_PROFILE", "message": "Complete your profile to see matches." } }
+{ "error": { "code": "CONFLICT", "reason": "NO_PROFILE", "message": "Complete your profile to see matches." } }
 ```
 
 | Status | `code` | When |
@@ -19,7 +19,7 @@ Every error response has the same body:
 | 400 | `VALIDATION` | Bad path param or malformed JSON body |
 | 401 | `UNAUTHENTICATED` | No signed-in student |
 | 404 | `NOT_FOUND` | Unknown route |
-| 409 | `STATE_CONFLICT` | A module threw `StateConflictError`; `reason` says which (SDD 10.3) |
+| 409 | `CONFLICT` | A module threw `StateConflictError`; `reason` says which (SDD 10.3) |
 | 429 | `RATE_LIMITED` | More than `RATE_LIMIT_MAX` requests (default 300) from one IP in 15 minutes. `/api/health` is exempt |
 | 503 | `UNAVAILABLE` | Any unexpected error, e.g. a failed database read. Details are logged on the server, never sent to the client |
 

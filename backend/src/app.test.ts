@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
+import express from 'express';
 import { createApp } from './app';
+import { errorHandler } from './middleware/errorHandler';
+import { StateConflictError as ModuleConflictError, ValidationError } from './errors';
 
-// Lets one test simulate a failed db read without touching the mock data.
+// lets one test simulate a failed db read without touching the mock data.
 const dbDown = vi.hoisted(() => ({ on: false }));
 vi.mock('./matching/data', async () => {
   const mock = await import('./matching/mockData.js');
@@ -70,7 +73,7 @@ describe('GET /api/courses/:courseId/candidates', () => {
     const res = await request(app).get('/api/courses/1/candidates').set(asStudent('107'));
     expect(res.status).toBe(409);
     expect(res.body.error).toEqual({
-      code: 'STATE_CONFLICT',
+      code: 'CONFLICT',
       reason: 'NO_PROFILE',
       message: 'Complete your profile to see matches.',
     });
@@ -145,5 +148,35 @@ describe('unknown routes and bad bodies', () => {
       .send('{bad json');
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION');
+  });
+});
+
+// profile and enrollment throw the error classes from src/errors.ts. their routes
+// aren't wired up yet, so this mounts a tiny app with the real error handler to
+// make sure those errors come back as 400 and 409 and not as a 503
+describe('errors from the profile and enrollment modules', () => {
+  const mini = express();
+  mini.get('/missing-field', () => {
+    throw new ValidationError(['workStyle', 'blocks']);
+  });
+  mini.get('/not-enrolled', () => {
+    throw new ModuleConflictError('NOT_ENROLLED');
+  });
+  mini.use(errorHandler);
+
+  it('maps ValidationError to 400 and lists every bad field', async () => {
+    const res = await request(mini).get('/missing-field');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatchObject({ code: 'VALIDATION', fields: ['workStyle', 'blocks'] });
+  });
+
+  it('maps NOT_ENROLLED from saveProfile to a 409 with a readable message', async () => {
+    const res = await request(mini).get('/not-enrolled');
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatchObject({
+      code: 'CONFLICT',
+      reason: 'NOT_ENROLLED',
+      message: 'Your enrollment in this class could not be verified.',
+    });
   });
 });

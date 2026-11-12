@@ -47,7 +47,7 @@ export async function saveProfile(studentId: bigint, courseIdRaw: string | bigin
   const { gradeGoal, workStyle } = parsed.data;
   const blocks = normalizeBlocks(parsed.data.blocks);
 
-  // All-or-nothing: if anything throws, the old profile stays untouched.
+  // all or nothing: if anything throws, the old profile stays untouched.
   await prisma.$transaction(async (tx) => {
     const enrolled = await repo.lockEnrollment(tx, studentId, courseId);
     if (!enrolled) throw new StateConflictError('NOT_ENROLLED');
