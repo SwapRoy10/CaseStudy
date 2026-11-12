@@ -8,7 +8,7 @@ type State =
   | { kind: 'error'; message: string; retryable: boolean }
   | { kind: 'ready'; candidates: CandidateSummary[] };
 
-export function CandidatesPage({ studentId, courseId }: { studentId: Id; courseId: Id }) {
+export function CandidatesPage({ studentId, courseId, studentName }: { studentId: Id; courseId: Id; studentName: string }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
@@ -22,8 +22,8 @@ export function CandidatesPage({ studentId, courseId }: { studentId: Id; courseI
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof ApiRequestError) {
-          // STATE_CONFLICT messages (e.g. NO_PROFILE) are written for the user.
-          // Network/server problems are worth retrying; conflicts aren't.
+          // CONFLICT messages (e.g. NO_PROFILE) are written for the user.
+          // network or server problems are worth retrying; conflicts aren't.
           const retryable = ['NETWORK', 'UNAVAILABLE', 'RATE_LIMITED'].includes(err.code);
           setState({ kind: 'error', message: err.message, retryable });
         } else {
@@ -38,7 +38,9 @@ export function CandidatesPage({ studentId, courseId }: { studentId: Id; courseI
 
   return (
     <section>
-      <h2>Study partner candidates</h2>
+      <h2>Study partners for {studentName}</h2>
+
+      <HowMatchingWorks />
 
       {state.kind === 'loading' && <p className="muted">Finding classmates…</p>}
 
@@ -50,7 +52,16 @@ export function CandidatesPage({ studentId, courseId }: { studentId: Id; courseI
       )}
 
       {state.kind === 'ready' && state.candidates.length === 0 && (
-        <p className="muted">No matches yet. Try adding more free time to your profile.</p>
+        <p className="muted">
+          No classmates currently meet both criteria: the same grade goal and at least one shared free time.
+          Adding more free time to your profile can help.
+        </p>
+      )}
+
+      {state.kind === 'ready' && state.candidates.length > 0 && (
+        <p className="muted">
+          {state.candidates.length} {state.candidates.length === 1 ? 'classmate matches' : 'classmates match'}, best match first
+        </p>
       )}
 
       {state.kind === 'ready' && state.candidates.length > 0 && (
@@ -61,5 +72,23 @@ export function CandidatesPage({ studentId, courseId }: { studentId: Id; courseI
         </ol>
       )}
     </section>
+  );
+}
+
+// srs ud-1: tell students how the list is put together. same order as the
+// matching code in backend/src/matching/pipeline.ts
+function HowMatchingWorks() {
+  return (
+    <details className="rules">
+      <summary>How matches are picked</summary>
+      <ol>
+        <li>Only classmates with the same grade goal as you.</li>
+        <li>Only classmates who share at least one free time with you.</li>
+        <li>More shared time slots ranks higher.</li>
+        <li>If that's a tie, classmates with your work style come first.</li>
+        <li>Anyone still tied is put in random order.</li>
+      </ol>
+      <p className="muted">Review ratings are shown but never change the order.</p>
+    </details>
   );
 }
