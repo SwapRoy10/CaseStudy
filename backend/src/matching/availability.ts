@@ -70,13 +70,15 @@ export function sharedIntersections(
   let overlapCount = 0;
 
   for (const r of requesterBlocks) {
+    let hit = false;
     for (const c of candidateBlocks) {
       const overlap = intersect(r, c);
       if (overlap) {
         intervals.push(overlap);
-        overlapCount++;
+        hit = true;
       }
     }
+    if (hit) overlapCount++;
   }
 
   return { intervals: mergeIntervals(intervals), overlapCount };
