@@ -29,6 +29,7 @@ jobs:
           --health-retries 20
     env:
       DATABASE_URL: postgresql://casestudy:casestudy@localhost:5432/casestudy
+      DIRECT_URL: postgresql://casestudy:casestudy@localhost:5432/casestudy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
