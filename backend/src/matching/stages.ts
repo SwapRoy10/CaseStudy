@@ -33,7 +33,7 @@ export function filterByAvailability(requester: Profile, candidates: Profile[]):
       studentId: c.studentId,
       gradeGoal: c.gradeGoal,
       workStyle: c.workStyle,
-      sharedIntervals: c.blocks,
+      sharedIntervals: shared.intervals,
       overlapCount: shared.overlapCount,
     });
   }
