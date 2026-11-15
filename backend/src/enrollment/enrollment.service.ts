@@ -17,7 +17,7 @@ export async function importRoster(courseIdRaw: string | bigint, csv: string) {
     return { rowNumber: i + 2, code, section, term, email: email?.toLowerCase() };
   });
 
-  // Check every row before writing anything.
+  // check every row before writing anything.
   const emails = [...new Set(rows.map((r) => r.email).filter((e): e is string => !!e))];
   const students = await prisma.student.findMany({
     where: { schoolEmail: { in: emails } },

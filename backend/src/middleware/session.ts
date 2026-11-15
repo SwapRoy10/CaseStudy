@@ -2,12 +2,12 @@ import type { RequestHandler } from 'express';
 import { ApiError } from './errorHandler';
 import { idString } from './validate';
 
-// The SDD says studentId comes from the session, never from the URL or body,
+// the sdd says studentId comes from the session, never from the url or body,
 // so a student can't ask for someone else's matches.
 //
-// DEMO STAND-IN: until real login exists, the frontend sends the signed-in
-// student's id in an X-Student-Id header. Replace this middleware with real
-// session/auth handling; everything downstream only reads res.locals.studentId,
+// demo stand-in: until real login exists, the frontend sends the signed-in
+// student's id in an X-Student-Id header. replace this middleware with real
+// session/auth handling. everything downstream only reads res.locals.studentId,
 // so nothing else has to change.
 
 export const requireStudent: RequestHandler = (req, res, next) => {

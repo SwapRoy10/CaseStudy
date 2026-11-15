@@ -10,8 +10,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
-      // The browser calls /api/... on the Vite server, which forwards to the
-      // backend. Same origin = no CORS setup needed in dev.
+      // the browser calls /api/... on the vite server, which forwards to the
+      // backend. same origin = no cors setup needed in dev.
       proxy: { '/api': { target: apiTarget, changeOrigin: true } },
     },
     preview: {

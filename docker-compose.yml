@@ -1,0 +1,22 @@
+# local postgres for development and the database tests.
+# start it with `npm run db:up` from the repo root, stop it with `npm run db:down`.
+# the password here is only for your own laptop, never use it anywhere real.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: casestudy
+      POSTGRES_PASSWORD: casestudy
+      POSTGRES_DB: casestudy
+    ports:
+      - '5432:5432'
+    volumes:
+      - casestudy-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U casestudy']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  casestudy-db:
