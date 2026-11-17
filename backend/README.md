@@ -34,7 +34,7 @@ The point of the app is forming groups, so after matching there are three more p
 | [`src/requests/groups.service.ts`](src/requests/groups.service.ts) | The student's group, and a matched student's full profile (only after an accepted request) |
 | [`src/reviews/reviews.service.ts`](src/reviews/reviews.service.ts) | Peer reviews on the criteria in [`criteria.ts`](src/reviews/criteria.ts), and the updated average |
 
-Every change locks the students' enrollment rows lower id first ([`src/enrollment/lock.ts`](src/enrollment/lock.ts)), as the SDD 5.3 says, so two answers at the same time can't tangle. These write to the database, so without a `DATABASE_URL` the routes answer 503. The tests for them make their own small class ([`src/requests/testUtils.ts`](src/requests/testUtils.ts)) and include requests answered at the same moment.
+Every change locks the students' enrollment rows lower id first ([`src/enrollment/lock.ts`](src/enrollment/lock.ts)), as the SDD 5.3 says, so two answers at the same time can't tangle. With no `DATABASE_URL` the same routes use an in memory copy in [`src/memory/`](src/memory/) that starts from the sample data, so the demo works on a laptop with no database. [`src/storage.ts`](src/storage.ts) picks which one, like `matching/data.ts` does. The two have to give the same answers, so the memory one has its own tests with the same cases. The tests for the Postgres ones make their own small class ([`src/requests/testUtils.ts`](src/requests/testUtils.ts)) and include requests answered at the same moment.
 
 ## How a request flows
 

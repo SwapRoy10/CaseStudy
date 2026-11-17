@@ -22,7 +22,7 @@ Open http://localhost:4173. You land on the sign in screen.
 6. **Filters.** Sign out and pick `104` (pass track): only classmates with the same grade goal appear.
 7. **Error handling.** Sign out and pick `107` (no availability saved): the app explains what to do instead of failing.
 
-## Forming a group (needs the database, see database/README.md)
+## Forming a group (works with or without a database)
 
 8. **Send a request.** On a candidate card press "Send request". It turns into "Request sent", and stays that way after a reload.
 9. **Answer it.** Sign out, pick that classmate, open Requests. They see the request with a summary and no name. Accept it.

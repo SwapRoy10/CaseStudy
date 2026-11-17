@@ -82,7 +82,7 @@ export const api = {
   // who is signed in, and their courses. 401 means nobody is
   getMe: () => request<Me>('/me'),
 
-  getProfile: (courseId: Id) => request<OwnProfile>(`/courses/${encodeURIComponent(courseId)}/profile`),
+  getProfile: (courseId: Id) => request<OwnProfile | null>(`/courses/${encodeURIComponent(courseId)}/profile`),
 
   saveProfile: (courseId: Id, profile: ProfileInput) =>
     request<OwnProfile>(`/courses/${encodeURIComponent(courseId)}/profile`, {

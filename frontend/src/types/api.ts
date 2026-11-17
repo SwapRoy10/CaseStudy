@@ -75,15 +75,16 @@ export interface GroupView {
   criteria: string[];
 }
 
-// reviewAverage comes as text: 'Not yet rated' or something like '3.2'
+// reviewAverage is null until somebody has rated them. GET /profile gives null
+// instead of this when nothing is saved yet
 export interface OwnProfile {
   courseId: Id;
   name: string;
   schoolEmail: string;
-  gradeGoal: GradeGoal | null;
-  workStyle: WorkStyle | null;
+  gradeGoal: GradeGoal;
+  workStyle: WorkStyle;
   blocks: AvailabilityBlock[];
-  reviewAverage: string;
+  reviewAverage: number | null;
 }
 
 // a matched student's full profile, only after an accepted request

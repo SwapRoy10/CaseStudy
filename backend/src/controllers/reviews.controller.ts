@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { idString } from '../middleware/validate';
-import { submitReview } from '../reviews/reviews.service';
+import { submitReview } from '../storage';
 
 export const groupParams = z.object({ groupId: idString });
 

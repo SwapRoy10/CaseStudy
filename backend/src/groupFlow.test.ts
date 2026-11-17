@@ -188,7 +188,7 @@ describe.skipIf(config.useMockData)('requests, groups and reviews over http', ()
     expect(member.reviewedByMe).toBe(true);
 
     const profile = await get(`/api/courses/${course}/profile`, bea);
-    expect(profile.body.reviewAverage).toBe('4.0');
+    expect(profile.body.reviewAverage).toBe(4);
   });
 
   it('lets a sender cancel: the recipient list drops it, the sender history keeps it', async () => {
@@ -246,24 +246,5 @@ describe('who can call these routes', () => {
   it.each(routes.filter(([method]) => method !== 'get'))('%s %s needs the client header', async (method, url) => {
     const res = await call(method, url).set(as(101n)).send({});
     expect(res.status).toBe(403);
-  });
-});
-
-// with no DATABASE_URL these have nowhere to write, and say so
-describe.skipIf(!config.useMockData)('without a database', () => {
-  it('answers 503 with a message that says what to do', async () => {
-    const res = await request(app)
-      .post('/api/courses/1/requests')
-      .set(CLIENT)
-      .set(as(101n))
-      .send({ recipientId: '102' });
-    expect(res.status).toBe(503);
-    expect(res.body.error.code).toBe('UNAVAILABLE');
-    expect(res.body.error.message).toMatch(/DATABASE_URL/);
-  });
-
-  it('still lets matching and /api/me work', async () => {
-    expect((await request(app).get('/api/courses/1/candidates').set(as(101n))).status).toBe(200);
-    expect((await request(app).get('/api/me').set(as(101n))).status).toBe(200);
   });
 });

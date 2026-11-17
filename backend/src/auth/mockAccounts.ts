@@ -1,4 +1,6 @@
-import { DEMO_PASSWORD, courses, enrollments, profiles, students } from '../sampleData';
+import { currentTerm } from '../courses/listCourses';
+import { store } from '../memory/store';
+import { DEMO_PASSWORD, courses, enrollments, students } from '../sampleData';
 import { hashPassword } from './password';
 import { Account, Me } from './types';
 
@@ -47,22 +49,23 @@ export async function setPasswordHash(studentId: string, passwordHash: string): 
 export async function getMe(studentId: string): Promise<Me | null> {
   const student = students.find((s) => s.id === studentId);
   if (!student) return null;
+  const term = await currentTerm();
   return {
     studentId: student.id,
     name: student.name,
     tutorialCompleted: tutorialDone.has(studentId),
     courses: enrollments
       .filter((e) => e.studentId === studentId)
-      .map((e) => {
-        const course = courses.find((c) => c.id === e.courseId)!;
-        return {
-          id: course.id,
-          code: course.code,
-          title: course.title,
-          section: course.section,
-          term: course.term,
-          hasProfile: profiles.some((p) => p.studentId === studentId && p.courseId === course.id),
-        };
-      }),
+      .map((e) => courses.find((c) => c.id === e.courseId)!)
+      // only this term's courses, like the database version
+      .filter((course) => term === null || course.term === term)
+      .map((course) => ({
+        id: course.id,
+        code: course.code,
+        title: course.title,
+        section: course.section,
+        term: course.term,
+        hasProfile: store.profiles.some((p) => p.studentId === studentId && p.courseId === course.id),
+      })),
   };
 }

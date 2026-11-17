@@ -46,22 +46,16 @@ describe.skipIf(config.useMockData)('profile routes', () => {
     request(app).put(`/api/courses/${courseId}/profile`).set(CLIENT).set(as(ids[who])).send(body);
   const get = (who: number) => request(app).get(`/api/courses/${course}/profile`).set(as(ids[who]));
 
-  it('has nothing saved at first, and says so', async () => {
+  it('is null while nothing is saved (sdd 6.3.2)', async () => {
     const res = await get(me);
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({
-      courseId: course,
-      gradeGoal: null,
-      workStyle: null,
-      blocks: [],
-      reviewAverage: 'Not yet rated',
-    });
+    expect(res.text).toBe('null');
   });
 
-  it('gives the student their name and email, which only they see here', async () => {
-    const res = await get(me);
-    expect(res.body.name).toContain('Student');
-    expect(res.body.schoolEmail).toMatch(/@test\.edu$/);
+  it('gives a student with no profile the same null even in a course they are not on', async () => {
+    const res = await request(app).get('/api/courses/999999999/profile').set(as(ids[me]));
+    expect(res.status).toBe(200);
+    expect(res.text).toBe('null');
   });
 
   it('can not see matches before there is a profile: 409 NO_PROFILE', async () => {
@@ -70,10 +64,12 @@ describe.skipIf(config.useMockData)('profile routes', () => {
     expect(res.body.error.reason).toBe('NO_PROFILE');
   });
 
-  it('saves a profile and gives it back', async () => {
+  it('saves a profile and gives it back, with the name and email only they see here', async () => {
     const res = await put(me, goodProfile);
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject(goodProfile);
+    expect(res.body).toMatchObject({ ...goodProfile, courseId: course, reviewAverage: null });
+    expect(res.body.name).toContain('Student');
+    expect(res.body.schoolEmail).toMatch(/@test\.edu$/);
     expect((await get(me)).body).toMatchObject(goodProfile);
   });
 

@@ -33,9 +33,9 @@ export function MatchedProfile({ courseId, studentId }: { courseId: Id; studentI
       </p>
       <p className="muted">{profile.schoolEmail}</p>
       <p className="tags">
-        {profile.gradeGoal && <span>{GOAL_LABEL[profile.gradeGoal]}</span>}
-        {profile.workStyle && <span>{STYLE_LABEL[profile.workStyle]}</span>}
-        <span>{profile.reviewAverage === 'Not yet rated' ? 'Not yet rated' : `Rated ${profile.reviewAverage} out of 5`}</span>
+        <span>{GOAL_LABEL[profile.gradeGoal]}</span>
+        <span>{STYLE_LABEL[profile.workStyle]}</span>
+        <span>{profile.reviewAverage === null ? 'Not yet rated' : `Rated ${profile.reviewAverage.toFixed(1)} out of 5`}</span>
       </p>
       <p className="label">Weekly free time</p>
       <ul className="intervals">

@@ -58,7 +58,7 @@ Needs the `X-Requested-With` header. Clears the cookie and returns `204`.
 
 ### `GET /api/me`
 
-Signed in. Who the session belongs to and the courses they are on the roster of. The frontend calls it on load to see if someone is already signed in. It never sends the password hash.
+Signed in. Who the session belongs to and the courses they are on the roster of, for the current term only (the newest term any course is in, "Fall 2026" right now). Past semesters stay in the database for their groups and reviews but aren't listed. The frontend calls it on load to see if someone is already signed in. It never sends the password hash.
 
 ```json
 {
@@ -69,6 +69,14 @@ Signed in. Who the session belongs to and the courses they are on the roster of.
     { "id": "1", "code": "SAMPLE 101", "title": "Sample Course (testing doc data)", "section": "001", "term": "Fall 2026", "hasProfile": true }
   ]
 }
+```
+
+### `GET /api/courses`
+
+Signed in. This term's courses for a class selector (SDD 6.3.1), all of them and not just the ones the student is on the roster of, since saving a profile does that check. `/api/me` has the student's own courses.
+
+```json
+{ "courses": [{ "courseId": "3", "code": "CSDS 393", "title": "Software Engineering", "section": "100", "term": "Fall 2026" }] }
 ```
 
 ### `PUT /api/me/password`
@@ -129,20 +137,20 @@ The reasons are `no login id`, `no account for that email` and `row is for a dif
 
 The answer is sent with `Cache-Control: no-store`. The names come from the Canvas `Student` column ("Last, First" becomes "First Last"). Hand the passwords out, and students change them with `PUT /api/me/password`.
 
-### Needs the database
+### With and without a database
 
-Everything from here down to the peer reviews (profile saves, requests, groups, reviews) writes to the database and has no in memory version. With no `DATABASE_URL`, which is the mock data demo, these answer `503 UNAVAILABLE` with a message saying to set it. Matching, sign in and `/api/me` still work without one.
+Profile saves, requests, groups and reviews work either way. With a `DATABASE_URL` they use Postgres. Without one (the mock data demo) they use an in memory copy of the sample data in `src/memory/`, which keeps whatever students do until the server stops. Both follow the same rules and give the same errors. Everything starts again from the sample data on a restart, and a password change or the tutorial flag does too.
 
 ### `GET /api/courses/:courseId/profile` and `PUT /api/courses/:courseId/profile`
 
-Signed in. `GET` gives the student's own saved profile for the course. Before anything is saved `gradeGoal` and `workStyle` are `null` and `blocks` is empty. `reviewAverage` is the string `Not yet rated` or a number like `3.2`.
+Signed in. `GET` gives the student's own saved profile for the course, or `null` if they haven't saved one (SDD 6.3.2). `reviewAverage` is a number, or `null` when nobody has rated them yet, which the screens write as "Not yet rated". It is rounded to one decimal.
 
 ```json
 {
   "courseId": "1", "name": "Alex Rivera", "schoolEmail": "axr101@case.edu",
   "gradeGoal": "A_TRACK", "workStyle": "GROUP",
   "blocks": [{ "weekday": 1, "startMinute": 540, "endMinute": 660 }],
-  "reviewAverage": "Not yet rated"
+  "reviewAverage": null
 }
 ```
 

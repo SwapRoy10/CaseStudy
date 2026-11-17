@@ -1,3 +1,4 @@
+import { currentTerm } from '../courses/listCourses';
 import { prisma } from '../db';
 import { Account, Me } from './types';
 
@@ -43,17 +44,21 @@ export async function getMe(studentId: string): Promise<Me | null> {
     },
   });
   if (!row) return null;
+  // only this term's courses, past semesters are just there for old groups and reviews
+  const term = await currentTerm();
   return {
     studentId: row.id.toString(),
     name: row.name,
     tutorialCompleted: row.tutorialCompleted,
-    courses: row.enrollments.map((e) => ({
-      id: e.courseId.toString(),
-      code: e.course.code,
-      title: e.course.title,
-      section: e.course.section,
-      term: e.course.term,
-      hasProfile: e.profile !== null,
-    })),
+    courses: row.enrollments
+      .filter((e) => term === null || e.course.term === term)
+      .map((e) => ({
+        id: e.courseId.toString(),
+        code: e.course.code,
+        title: e.course.title,
+        section: e.course.section,
+        term: e.course.term,
+        hasProfile: e.profile !== null,
+      })),
   };
 }
