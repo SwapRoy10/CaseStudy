@@ -23,6 +23,18 @@ async function waitForServer() {
   }
 }
 
+// signs in like the browser does and keeps the session cookie for later calls
+const DEMO_PASSWORD = 'casestudy123';
+async function signIn(email, password = DEMO_PASSWORD) {
+  const res = await fetch(`${base}/api/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'CaseStudy' },
+    body: JSON.stringify({ email, password }),
+  });
+  const cookie = res.headers.get('set-cookie')?.split(';')[0];
+  return { res, cookie };
+}
+
 const checks = [
   ['frontend serves the app', async () => {
     const res = await fetch(`${base}/`);
@@ -33,19 +45,50 @@ const checks = [
     const body = await (await fetch(`${base}/api/health`)).json();
     assert(body.status === 'ok', `unexpected body ${JSON.stringify(body)}`);
   }],
+  ['wrong password gets 401 and no cookie', async () => {
+    const { res, cookie } = await signIn('axr101@case.edu', 'not the password');
+    assert(res.status === 401, `status ${res.status}`);
+    assert(!cookie, 'a cookie was set for a failed sign in');
+  }],
+  ['signing in gives a session for /api/me', async () => {
+    const { res, cookie } = await signIn('axr101@case.edu');
+    assert(res.status === 200 && cookie, `sign in status ${res.status}`);
+    const me = await fetch(`${base}/api/me`, { headers: { Cookie: cookie } });
+    const body = await me.json();
+    assert(me.status === 200 && body.studentId === '101', `status ${me.status}`);
+  }],
+  ['the demo roster signs you in as a picked student', async () => {
+    const roster = await (await fetch(`${base}/api/demo/roster`)).json();
+    const student = roster.courses.find((c) => c.code === 'CSDS 393').students[0];
+    const res = await fetch(`${base}/api/demo/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'CaseStudy' },
+      body: JSON.stringify({ studentId: student.id }),
+    });
+    const cookie = res.headers.get('set-cookie')?.split(';')[0];
+    assert(res.status === 200 && cookie, `status ${res.status}`);
+    const me = await (await fetch(`${base}/api/me`, { headers: { Cookie: cookie } })).json();
+    assert(me.studentId === student.id, `signed in as ${me.studentId}`);
+  }],
   ['candidates for a signed-in student', async () => {
-    const res = await fetch(`${base}/api/courses/1/candidates`, { headers: { 'X-Student-Id': '101' } });
+    const { cookie } = await signIn('axr101@case.edu');
+    const res = await fetch(`${base}/api/courses/1/candidates`, { headers: { Cookie: cookie } });
     const body = await res.json();
     assert(res.status === 200, `status ${res.status}`);
     assert(Array.isArray(body.candidates) && body.candidates.length > 0, 'expected at least one candidate');
   }],
   ['incomplete profile gets 409 NO_PROFILE', async () => {
-    const res = await fetch(`${base}/api/courses/1/candidates`, { headers: { 'X-Student-Id': '107' } });
+    const { cookie } = await signIn('gxl107@case.edu');
+    const res = await fetch(`${base}/api/courses/1/candidates`, { headers: { Cookie: cookie } });
     const body = await res.json();
     assert(res.status === 409 && body.error?.reason === 'NO_PROFILE', `status ${res.status}`);
   }],
   ['no session gets 401', async () => {
     const res = await fetch(`${base}/api/courses/1/candidates`);
+    assert(res.status === 401, `status ${res.status}`);
+  }],
+  ['the old X-Student-Id header no longer counts', async () => {
+    const res = await fetch(`${base}/api/courses/1/candidates`, { headers: { 'X-Student-Id': '101' } });
     assert(res.status === 401, `status ${res.status}`);
   }],
 ];

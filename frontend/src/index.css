@@ -38,10 +38,19 @@ body { margin: 0; }
 .status-down { color: var(--bad); }
 .status-down .status-dot { background: var(--bad); }
 
-.demo-bar {
+.account-bar {
   display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between;
   margin: 16px 0 24px; padding: 10px 12px;
-  border: 1px dashed var(--border); border-radius: 8px; font-size: 0.9rem;
+  border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem;
+}
+.account-bar .who { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+
+.signin { max-width: 360px; margin: 48px auto 0; }
+.demo-picker { margin-top: 32px; padding-top: 16px; border-top: 1px dashed var(--border); }
+.demo-picker h3 { font-size: 1rem; margin: 0 0 4px; }
+.signin input {
+  font: inherit; padding: 8px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
 }
 select, button { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 button { cursor: pointer; }

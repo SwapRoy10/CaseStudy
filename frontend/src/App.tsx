@@ -1,42 +1,54 @@
 import { useEffect, useState } from 'react';
-import { api, setDemoStudent } from './services/api';
-import type { DemoCourse, Id } from './types/api';
+import { api, ApiRequestError, setSignedOutHandler } from './services/api';
+import type { Id, Me, MyCourse } from './types/api';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { CandidatesPage } from './pages/CandidatesPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { SignInPage } from './pages/SignInPage';
 
 export default function App() {
-  const [roster, setRoster] = useState<DemoCourse[]>([]);
-  const [rosterError, setRosterError] = useState<string | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
+  // true until the first answer from /api/me, so the sign in screen doesn't flash
+  const [checking, setChecking] = useState(true);
+  const [startError, setStartError] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<Id>('');
-  const [studentId, setStudentId] = useState<Id>('');
   const [page, setPage] = useState<'matches' | 'profile'>('matches');
 
-  // set right away so the page's first request already carries the id
-  setDemoStudent(studentId || null);
-
-  // there's no sign in yet, so we load everyone you could "be" from the backend
+  // a 401 from any call means the session ended, so go back to the sign in screen
   useEffect(() => {
-    api
-      .getDemoRoster()
-      .then((res) => {
-        setRoster(res.courses);
-        // start in csds 393 since that's the real class
-        const start = res.courses.find((c) => c.code === 'CSDS 393') ?? res.courses[0];
-        if (start) pickCourse(start);
-      })
-      .catch((err: Error) => setRosterError(err.message));
+    setSignedOutHandler(() => setMe(null));
+    return () => setSignedOutHandler(null);
   }, []);
 
-  // switching course also switches to someone on that roster who has a profile
-  function pickCourse(course: DemoCourse) {
-    setCourseId(course.id);
-    const first = course.students.find((s) => s.hasProfile) ?? course.students[0];
-    setStudentId(first ? first.id : '');
+  // someone may already be signed in, since the cookie survives a page reload
+  useEffect(() => {
+    api
+      .getMe()
+      .then(start)
+      .catch((err: unknown) => {
+        // 401 just means nobody is signed in yet, anything else is a real problem
+        if (!(err instanceof ApiRequestError) || err.status !== 401) {
+          setStartError(err instanceof Error ? err.message : 'Something went wrong.');
+        }
+      })
+      .finally(() => setChecking(false));
+  }, []);
+
+  function start(student: Me) {
+    setMe(student);
+    setPage('matches');
+    // start in csds 393 since that's the real class
+    const first = student.courses.find((c) => c.code === 'CSDS 393') ?? student.courses[0];
+    setCourseId(first ? first.id : '');
   }
 
-  const course = roster.find((c) => c.id === courseId);
-  const student = course?.students.find((s) => s.id === studentId);
+  async function handleSignOut() {
+    // the cookie is cleared by the server, but if the call fails we still leave
+    await api.signOut().catch(() => null);
+    setMe(null);
+  }
+
+  const course: MyCourse | undefined = me?.courses.find((c) => c.id === courseId);
 
   return (
     <div className="shell">
@@ -48,64 +60,65 @@ export default function App() {
         <ConnectionStatus />
       </header>
 
-      {course && (
-        <p className="course-title">
-          {course.code}: {course.title} <span className="muted">{course.term}</span>
-        </p>
+      {checking && <p className="muted">Loading...</p>}
+
+      {startError && (
+        <div className="notice" role="alert">
+          <p>{startError}</p>
+        </div>
       )}
 
-      <nav className="tabs">
-        <button className={page === 'matches' ? 'tab active' : 'tab'} onClick={() => setPage('matches')}>
-          Matches
-        </button>
-        <button className={page === 'profile' ? 'tab active' : 'tab'} onClick={() => setPage('profile')}>
-          My profile
-        </button>
-      </nav>
+      {!checking && !startError && !me && <SignInPage onSignedIn={start} />}
 
-      <div className="demo-bar">
-        <span className="muted">Demo sign in</span>
-        <label>
-          Course{' '}
-          <select
-            value={courseId}
-            onChange={(e) => {
-              const picked = roster.find((c) => c.id === e.target.value);
-              if (picked) pickCourse(picked);
-            }}
-          >
-            {roster.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Student{' '}
-          <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-            {course?.students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-                {s.hasProfile ? '' : ' (no profile yet)'}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <main>
-        {rosterError && (
-          <div className="notice" role="alert">
-            <p>{rosterError}</p>
+      {me && (
+        <>
+          <div className="account-bar">
+            <span className="who">
+              <span>
+                Signed in as <strong>{me.name}</strong>
+              </span>
+              <button onClick={handleSignOut}>Sign out</button>
+            </span>
+            {me.courses.length > 0 && (
+              <label>
+                Course{' '}
+                <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+                  {me.courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.code}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
-        )}
-        {!rosterError && !course && <p className="muted">Loading your courses...</p>}
-        {course && student && page === 'matches' && (
-          <CandidatesPage studentId={studentId} courseId={courseId} studentName={student.name} />
-        )}
-        {course && page === 'profile' && <ProfilePage />}
-      </main>
+
+          {course && (
+            <p className="course-title">
+              {course.code}: {course.title} <span className="muted">{course.term}</span>
+            </p>
+          )}
+
+          <nav className="tabs">
+            <button className={page === 'matches' ? 'tab active' : 'tab'} onClick={() => setPage('matches')}>
+              Matches
+            </button>
+            <button className={page === 'profile' ? 'tab active' : 'tab'} onClick={() => setPage('profile')}>
+              My profile
+            </button>
+          </nav>
+
+          <main>
+            {me.courses.length === 0 && (
+              <p className="muted">You are not on the roster of any course yet.</p>
+            )}
+            {course && page === 'matches' && (
+              <CandidatesPage studentId={me.studentId} courseId={courseId} studentName={me.name} />
+            )}
+            {course && page === 'profile' && <ProfilePage />}
+          </main>
+        </>
+      )}
     </div>
   );
 }

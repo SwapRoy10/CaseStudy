@@ -12,6 +12,7 @@
     "test": "npm test --prefix backend",
     "typecheck": "npm run typecheck --prefix backend && npm run typecheck --prefix frontend",
     "db:up": "docker compose up -d --wait && cd backend && npx prisma migrate deploy",
+    "db:migrate": "cd backend && npx prisma migrate deploy",
     "db:seed": "cd backend && npx prisma db seed",
     "db:down": "docker compose down",
     "coverage": "npm run test:coverage --prefix backend"

@@ -1,4 +1,4 @@
-import type { ApiErrorBody, CandidatesResponse, DemoCourse, Id } from '../types/api';
+import type { ApiErrorBody, CandidatesResponse, DemoCourse, Id, Me } from '../types/api';
 
 // every backend call goes through this file, so the url, headers and error
 // handling live in one place. pages call api.getCandidates(...) etc.
@@ -6,11 +6,12 @@ import type { ApiErrorBody, CandidatesResponse, DemoCourse, Id } from '../types/
 // empty means same origin, the vite proxy forwards /api to the backend.
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
-// demo stand-in for real login: the backend reads the student from this header.
-// when auth exists, delete this and let the session cookie do the work.
-let currentStudentId: Id | null = null;
-export function setDemoStudent(id: Id | null) {
-  currentStudentId = id;
+// the session is a cookie the browser keeps and sends by itself, so nothing here
+// handles it. when any call comes back 401 the session is over, so the app
+// registers a function here that takes the student back to the sign in screen.
+let onSignedOut: (() => void) | null = null;
+export function setSignedOutHandler(handler: (() => void) | null) {
+  onSignedOut = handler;
 }
 
 export class ApiRequestError extends Error {
@@ -29,7 +30,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
   if (init.body) headers.set('Content-Type', 'application/json');
-  if (currentStudentId) headers.set('X-Student-Id', currentStudentId);
+  // the backend turns away changes without this, which stops other sites sending them (sdd 9.4)
+  headers.set('X-Requested-With', 'CaseStudy');
 
   let res: Response;
   try {
@@ -42,6 +44,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body: unknown = await res.json().catch(() => null);
 
   if (!res.ok) {
+    if (res.status === 401) onSignedOut?.();
     const err = (body as ApiErrorBody | null)?.error;
     if (err) throw new ApiRequestError(res.status, err.code, err.message, err.reason);
     throw new ApiRequestError(res.status, 'NETWORK', "Can't reach the server. Is the backend running?");
@@ -55,6 +58,22 @@ export const api = {
   getCandidates: (courseId: Id) =>
     request<CandidatesResponse>(`/courses/${encodeURIComponent(courseId)}/candidates`),
 
-  // demo stand-in for sign in, lists who you can pick in each course
+  signIn: (email: string, password: string) =>
+    request<{ studentId: Id; tutorialCompleted: boolean }>('/session', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+
+  signOut: () => request<null>('/session', { method: 'DELETE' }),
+
+  // who is signed in, and their courses. 401 means nobody is
+  getMe: () => request<Me>('/me'),
+
+  // demo only: the students you can pick from, and signing in as one without a password
   getDemoRoster: () => request<{ courses: DemoCourse[] }>('/demo/roster'),
+  demoSignIn: (studentId: Id) =>
+    request<{ studentId: Id; tutorialCompleted: boolean }>('/demo/session', {
+      method: 'POST',
+      body: JSON.stringify({ studentId }),
+    }),
 };

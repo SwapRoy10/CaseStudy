@@ -18,6 +18,7 @@ const conflictMessages: Record<string, string> = {
 export type ApiErrorCode =
   | 'VALIDATION'
   | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'UNAVAILABLE';

@@ -17,5 +17,15 @@ export function createApiRateLimiter() {
   });
 }
 
-// TODO (when login exists): add a much stricter limiter on the login route, e.g.
-// rateLimit({ windowMs: 15 * 60 * 1000, limit: 10 }), like the template's authRateLimiter.
+// much stricter limit on signing in, so guessing passwords is slow. only wrong
+// attempts count, a student who gets it right isn't held back.
+export function createSignInRateLimiter() {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    skipSuccessfulRequests: true,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: { code: 'RATE_LIMITED', message: 'Too many sign in attempts. Please wait a few minutes and try again.' } },
+  });
+}

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { courses, enrollments, pastGroups, profiles, reviews, students } from './sampleData';
+import { hashPassword } from './auth/password';
+import { DEMO_PASSWORD, courses, enrollments, pastGroups, profiles, reviews, students } from './sampleData';
 
 // writes everything in sampleData.ts into postgres. safe to run more than once:
 // it puts the sample rows back the way the file says and leaves anything else alone.
@@ -8,6 +9,10 @@ export async function seedSampleData(prisma: PrismaClient) {
   const groupIds = pastGroups.map((g) => BigInt(g.id));
   const studentIds = students.map((s) => BigInt(s.id));
   const courseIds = courses.map((c) => BigInt(c.id));
+
+  // hashed up front, the transaction below has a time limit. every sample
+  // student shares the one hash, they all sign in with the same demo password.
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
 
   await prisma.$transaction(async (tx) => {
     // clear old sample reviews, groups and profiles first so a rerun starts clean
@@ -22,8 +27,7 @@ export async function seedSampleData(prisma: PrismaClient) {
     }
 
     for (const s of students) {
-      // nobody can sign in with this, real login isn't built yet
-      const data = { name: s.name, schoolEmail: s.email, passwordHash: 'seed-placeholder-not-a-real-hash' };
+      const data = { name: s.name, schoolEmail: s.email, passwordHash };
       await tx.student.upsert({ where: { id: BigInt(s.id) }, create: { id: BigInt(s.id), ...data }, update: data });
     }
 

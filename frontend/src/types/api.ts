@@ -29,8 +29,25 @@ export interface ApiErrorBody {
   error: { code: string; message: string; reason?: string };
 }
 
+// from GET /api/me (backend/src/auth/types.ts)
+export interface MyCourse {
+  id: Id;
+  code: string;
+  title: string;
+  section: string;
+  term: string;
+  hasProfile: boolean;
+}
+
+export interface Me {
+  studentId: Id;
+  name: string;
+  tutorialCompleted: boolean;
+  courses: MyCourse[];
+}
+
 // demo only, from GET /api/demo/roster (backend/src/controllers/demo.controller.ts).
-// goes away once real sign in exists
+// it only exists outside production, so the picker on the sign in page hides when it's gone
 export interface DemoStudent {
   id: Id;
   name: string;
