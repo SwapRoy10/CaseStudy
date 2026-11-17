@@ -1,8 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { config } from './config';
 import { prisma } from './db';
+import { hashPassword, verifyPassword } from './auth/password';
 import { seedSampleData } from './seedSampleData';
-import { reviewAverage, reviews, students } from './sampleData';
+import { DEMO_PASSWORD, reviewAverage, reviews, students } from './sampleData';
 
 // the seed already ran once in globalSetup.ts. these run it again to make sure
 // it really is safe to rerun, since the readme tells people to do exactly that
@@ -49,5 +50,75 @@ describe.skipIf(config.useMockData)('seedSampleData', () => {
     });
     expect(s.id).toBeGreaterThan(taken);
     await prisma.student.delete({ where: { id: s.id } });
+  });
+
+  // the seed uses fixed ids, so on a shared database it must not replace rows that
+  // belong to someone else
+  describe('on a database with other people in it', () => {
+    it('stops when a sample student id belongs to a real account', async () => {
+      const before = await prisma.student.findUniqueOrThrow({ where: { id: 999n } });
+      // a different hash, like a real student who signed up with their own password
+      const real = await hashPassword('their own password');
+      await prisma.student.update({
+        where: { id: 999n },
+        data: { passwordHash: real, name: 'Real Person', schoolEmail: 'real.person@somewhere.edu' },
+      });
+      try {
+        await expect(seedSampleData(prisma)).rejects.toThrow(/student id 999 .* not overwriting/);
+        const after = await prisma.student.findUniqueOrThrow({ where: { id: 999n } });
+        expect(after.name).toBe('Real Person');
+      } finally {
+        await prisma.student.update({
+          where: { id: 999n },
+          data: { passwordHash: before.passwordHash, name: before.name, schoolEmail: before.schoolEmail },
+        });
+      }
+    });
+
+    it('is fine when a sample student has changed their password', async () => {
+      const before = await prisma.student.findUniqueOrThrow({ where: { id: 999n } });
+      await prisma.student.update({ where: { id: 999n }, data: { passwordHash: await hashPassword('picked their own') } });
+      try {
+        await expect(seedSampleData(prisma)).resolves.toBeDefined();
+      } finally {
+        await prisma.student.update({ where: { id: 999n }, data: { passwordHash: before.passwordHash } });
+      }
+    });
+
+    it('stops when a sample course has a real student on its roster', async () => {
+      // course 4 is a past semester, no other test looks at its roster
+      const outsider = await prisma.student.create({
+        data: { name: 'Real Person', schoolEmail: `outsider${Date.now()}@test.edu`, passwordHash: await hashPassword('x') },
+      });
+      await prisma.enrollment.create({ data: { studentId: outsider.id, courseId: 4n } });
+      try {
+        await expect(seedSampleData(prisma)).rejects.toThrow(/course id 4 .* not overwriting/);
+      } finally {
+        await prisma.enrollment.deleteMany({ where: { studentId: outsider.id } });
+        await prisma.student.delete({ where: { id: outsider.id } });
+      }
+    });
+
+    it('goes ahead anyway with SEED_FORCE=true', async () => {
+      const real = await hashPassword('their own password');
+      await prisma.student.update({ where: { id: 999n }, data: { passwordHash: real, schoolEmail: 'real.person@somewhere.edu' } });
+      process.env.SEED_FORCE = 'true';
+      try {
+        await seedSampleData(prisma);
+      } finally {
+        delete process.env.SEED_FORCE;
+      }
+      // put back as sample data, with the demo password
+      const row = await prisma.student.findUniqueOrThrow({ where: { id: 999n } });
+      expect(await verifyPassword(row.passwordHash, DEMO_PASSWORD)).toBe(true);
+    });
+
+    it('is fine with a database that still has the old placeholder hash', async () => {
+      await prisma.student.update({
+        where: { id: 999n },
+        data: { passwordHash: 'seed-placeholder-not-a-real-hash', schoolEmail: 'real.person@somewhere.edu' },
+      });
+      await expect(seedSampleData(prisma)).resolves.toBeDefined();
+    });
   });
 });

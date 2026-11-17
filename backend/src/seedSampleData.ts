@@ -1,6 +1,46 @@
 import { PrismaClient } from '@prisma/client';
-import { hashPassword } from './auth/password';
+import { hashPassword, verifyPassword } from './auth/password';
 import { DEMO_PASSWORD, courses, enrollments, pastGroups, profiles, reviews, students } from './sampleData';
+
+// the seed saves rows under fixed ids, so on a database that has other people's
+// rows it could overwrite them. this looks first and stops if an id is taken by
+// something that isn't sample data. a sample student has the sample email, or
+// else the demo password (or the placeholder older seeds used), so anyone else
+// stands out. a sample student who changed their password still has their email.
+// set SEED_FORCE=true to skip the check.
+const OLD_PLACEHOLDER = 'seed-placeholder-not-a-real-hash';
+
+async function checkNothingIsOverwritten(prisma: PrismaClient) {
+  if (process.env.SEED_FORCE === 'true') return;
+
+  const taken = await prisma.student.findMany({
+    where: { id: { in: students.map((s) => BigInt(s.id)) } },
+    select: { id: true, schoolEmail: true, passwordHash: true },
+  });
+
+  // every sample student shares one hash, so this is usually a single check
+  const checked = new Set<string>();
+  for (const row of taken) {
+    const sample = students.find((s) => s.id === row.id.toString());
+    if (sample && sample.email.toLowerCase() === row.schoolEmail.toLowerCase()) continue;
+    if (checked.has(row.passwordHash) || row.passwordHash === OLD_PLACEHOLDER) continue;
+    if (!(await verifyPassword(row.passwordHash, DEMO_PASSWORD))) {
+      throw new Error(`student id ${row.id} is already used by someone who isn't sample data, not overwriting. Use a fresh database, or SEED_FORCE=true if you're sure.`);
+    }
+    checked.add(row.passwordHash);
+  }
+
+  // a course at one of our ids that has real students on it
+  const sampleIds = new Set(students.map((s) => BigInt(s.id)));
+  const enrolled = await prisma.enrollment.findMany({
+    where: { courseId: { in: courses.map((c) => BigInt(c.id)) } },
+    select: { studentId: true, courseId: true },
+  });
+  const outsider = enrolled.find((e) => !sampleIds.has(e.studentId));
+  if (outsider) {
+    throw new Error(`course id ${outsider.courseId} has students on it who aren't sample data, not overwriting. Use a fresh database, or SEED_FORCE=true if you're sure.`);
+  }
+}
 
 // writes everything in sampleData.ts into postgres. safe to run more than once:
 // it puts the sample rows back the way the file says and leaves anything else alone.
@@ -13,6 +53,8 @@ export async function seedSampleData(prisma: PrismaClient) {
   // hashed up front, the transaction below has a time limit. every sample
   // student shares the one hash, they all sign in with the same demo password.
   const passwordHash = await hashPassword(DEMO_PASSWORD);
+
+  await checkNothingIsOverwritten(prisma);
 
   await prisma.$transaction(async (tx) => {
     // clear old sample reviews, groups and profiles first so a rerun starts clean
