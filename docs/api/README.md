@@ -129,6 +129,108 @@ The reasons are `no login id`, `no account for that email` and `row is for a dif
 
 The answer is sent with `Cache-Control: no-store`. The names come from the Canvas `Student` column ("Last, First" becomes "First Last"). Hand the passwords out, and students change them with `PUT /api/me/password`.
 
+### Needs the database
+
+Everything from here down to the peer reviews (profile saves, requests, groups, reviews) writes to the database and has no in memory version. With no `DATABASE_URL`, which is the mock data demo, these answer `503 UNAVAILABLE` with a message saying to set it. Matching, sign in and `/api/me` still work without one.
+
+### `GET /api/courses/:courseId/profile` and `PUT /api/courses/:courseId/profile`
+
+Signed in. `GET` gives the student's own saved profile for the course. Before anything is saved `gradeGoal` and `workStyle` are `null` and `blocks` is empty. `reviewAverage` is the string `Not yet rated` or a number like `3.2`.
+
+```json
+{
+  "courseId": "1", "name": "Alex Rivera", "schoolEmail": "axr101@case.edu",
+  "gradeGoal": "A_TRACK", "workStyle": "GROUP",
+  "blocks": [{ "weekday": 1, "startMinute": 540, "endMinute": 660 }],
+  "reviewAverage": "Not yet rated"
+}
+```
+
+`PUT` takes `{ "gradeGoal", "workStyle", "blocks" }` and saves it, replacing the whole availability in one transaction, then answers with the saved profile. Overlapping blocks are merged and a block that crosses midnight is split in two, the same way matching counts them. The next matching run uses it, nothing needs a restart.
+
+Errors: `400 VALIDATION` with `fields` listing every missing or bad field, `409 NOT_ENROLLED` if the course roster doesn't have the student. A failed save leaves the old profile as it was.
+
+### `POST /api/me/tutorial-complete`
+
+Signed in, needs the client header. Marks the first time tutorial as seen so it doesn't open again. Answers `204`.
+
+### `POST /api/courses/:courseId/requests`
+
+Signed in. Body `{ "recipientId": "102" }`. Sends a match request and answers `201` with the pending record:
+
+```json
+{
+  "requestId": "7", "courseId": "1", "requesterId": "101", "recipientId": "102",
+  "status": "PENDING", "requestedAt": "2026-11-17T04:00:00.000Z", "respondedAt": null
+}
+```
+
+Both students are locked and both profiles are read again inside the transaction, so a profile change can't slip in between the check and the save. Errors:
+
+| Status | Reason | When |
+| --- | --- | --- |
+| 400 | `VALIDATION`, `fields: ["recipientId"]` | A request to yourself, or an id that isn't a number |
+| 409 | `NOT_ENROLLED` | Either student isn't on the course roster |
+| 409 | `NO_PROFILE` | The sender has no complete profile |
+| 409 | `NO_LONGER_ELIGIBLE` | The recipient has no profile, or no longer passes the grade goal and shared time filters |
+| 409 | `DUPLICATE_REQUEST` | The sender already has a pending request to the same student in this course |
+
+### `GET /api/courses/:courseId/requests`
+
+Signed in. `{ "courseId", "requests": [...] }`, the student's sent and received requests in the course, newest first. A canceled request stays in the sender's list but is left out of the recipient's. Each one has an `other` field, the other student's limited summary worked out from the caller's side (grade goal, work style, shared times, review average, same as a candidate card), or `null` if they no longer match. No names or emails are in it.
+
+### `POST /api/requests/:requestId/response`
+
+Signed in. Body `{ "decision": "ACCEPT" }` or `"DECLINE"`. Only the recipient can answer. Answers with the updated record.
+
+Accepting does all of this in one transaction: if neither student has a group a new one is made with both, if one has a group the other is added to it, and if both already have groups nothing changes and it answers `409 GROUP_MERGE` ("Group merging is not available in this release."). A pair who are already in the same group get the same answer. Declining only locks the request.
+
+| Status | Reason | When |
+| --- | --- | --- |
+| 403 | `FORBIDDEN` | The caller isn't the recipient. A request that doesn't exist gets the same answer |
+| 409 | `NOT_PENDING` | Already accepted, declined or canceled |
+| 409 | `GROUP_MERGE` | Both already belong to groups |
+| 409 | `NOT_ENROLLED`, `NO_LONGER_ELIGIBLE` | When accepting, one of them left the roster or lost their profile |
+
+### `POST /api/requests/:requestId/cancel`
+
+Signed in. Only the sender, and only while pending. Sets it to `CANCELED` and answers with the record. `403 FORBIDDEN` for anyone else, `409 NOT_PENDING` if it was already answered.
+
+### `GET /api/courses/:courseId/group`
+
+Signed in. `{ "group": null }` if the student has no group in the course, otherwise:
+
+```json
+{
+  "group": {
+    "groupId": "3", "courseId": "1", "formedAt": "2026-11-17T04:00:00.000Z",
+    "members": [{ "studentId": "101", "name": "Alex Rivera", "reviewedByMe": false }],
+    "criteria": ["Communication", "Reliability", "Contribution"]
+  }
+}
+```
+
+### `GET /api/courses/:courseId/members/:studentId`
+
+Signed in. The full profile of a student you have an accepted request with in this course, in the same shape as the profile above plus `studentId`. It has their `schoolEmail`, which stays hidden until a match (PR-2). The check runs on every call. A pending, declined or canceled request doesn't count, and neither does being in the same group without a request between the two of you. Anything else is `403`, and an id that doesn't exist gets the same answer.
+
+### `POST /api/groups/:groupId/reviews`
+
+Signed in. Body has one rating for every criterion in the group's `criteria`, no more and no less, each a whole number from 1 to 5:
+
+```json
+{
+  "revieweeId": "102",
+  "ratings": [
+    { "criteriaName": "Communication", "rating": 5 },
+    { "criteriaName": "Reliability", "rating": 4 },
+    { "criteriaName": "Contribution", "rating": 4 }
+  ]
+}
+```
+
+Answers `201` with `{ "reviewId": "9", "revieweeAverage": 4.33 }`, the mean of every rating that student has received. Errors: `400 VALIDATION` with `fields` (`ratings` for a missing, extra or out of range rating), `403 FORBIDDEN` if you or the reviewee aren't in the group or you review yourself, `409 DUPLICATE_REVIEW` for a second review of the same person in the same group. The average shows on profiles and candidate cards but never changes the match order.
+
 ### `GET /api/courses/:courseId/candidates`
 
 Signed in. Ranked study-partner candidates for the signed-in student in this course (SDD 6.3.4). The order is the ranking; there is no cap.

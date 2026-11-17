@@ -22,6 +22,14 @@ Open http://localhost:4173. You land on the sign in screen.
 6. **Filters.** Sign out and pick `104` (pass track): only classmates with the same grade goal appear.
 7. **Error handling.** Sign out and pick `107` (no availability saved): the app explains what to do instead of failing.
 
+## Forming a group (needs the database, see database/README.md)
+
+8. **Send a request.** On a candidate card press "Send request". It turns into "Request sent", and stays that way after a reload.
+9. **Answer it.** Sign out, pick that classmate, open Requests. They see the request with a summary and no name. Accept it.
+10. **A group forms.** Open Group. Both students are in it. The first student can now open the other's full profile, with their email.
+11. **Groups don't merge.** If both students are already in different groups, accepting says group merging is not available.
+12. **Peer review.** In Group, rate a member on every criterion, send it, and the form goes read only. Their profile now shows the average, and it never changes the match order.
+
 ## If something goes wrong
 
 | Symptom | Fix |
