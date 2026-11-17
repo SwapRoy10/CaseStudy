@@ -10,6 +10,10 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 const server = createApp().listen(config.port, () => {
   logger.info(`CaseStudy API listening on http://localhost:${config.port}/api`);
   logger.info(config.useMockData ? 'Matching is using the mock student list' : 'Matching is reading from Postgres');
+  // anyone who can reach the server can sign in as any student with these on
+  if (config.demoRoutes && !config.useMockData) {
+    logger.warn('Demo routes are on: anyone can sign in as any student. Set DEMO_ROUTES=false for a real deployment.');
+  }
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {

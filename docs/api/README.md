@@ -71,11 +71,15 @@ Signed in. Who the session belongs to and the courses they are on the roster of.
 }
 ```
 
+### `PUT /api/me/password`
+
+Signed in, and needs the `X-Requested-With` header. Body is `{ "currentPassword": "...", "newPassword": "..." }`. The new one has to be 8 to 128 characters and different from the current one. Answers `204`. A wrong current password gets a `400`. Without a database the change only lasts until the server restarts.
+
 ### `GET /api/demo/roster` and `POST /api/demo/session`
 
-Demo only, and both are switched off when `NODE_ENV` is `production`. The roster lists each course that has profiles with the students on it (names and ids, never emails), and it needs no sign in. It reads from whichever database `DATABASE_URL` points at, so with Supabase set up the demo class list comes from Supabase. The sign in page uses it as a picker.
+Demo only. Both are on by default and switched off when `NODE_ENV` is `production`, or anywhere with `DEMO_ROUTES=false` in `backend/.env` (`DEMO_ROUTES=true` is refused in production). The server logs a warning at startup when they are on with a real database. The roster lists each course that has profiles with the students on it (names and ids, never emails), and it needs no sign in. It reads from whichever database `DATABASE_URL` points at, so with Supabase set up the demo class list comes from Supabase. The sign in page uses it as a picker.
 
-`POST /api/demo/session` takes `{ "studentId": "101" }` and signs you in as that student with no password, setting the same cookie as a normal sign in. It needs the `X-Requested-With` header like any other change, and answers `404` for a student that doesn't exist. Because it skips the password it must never be reachable on a real deployment, so run that one with `NODE_ENV=production`.
+`POST /api/demo/session` takes `{ "studentId": "101" }` and signs you in as that student with no password, setting the same cookie as a normal sign in. It needs the `X-Requested-With` header like any other change, and answers `404` for a student that doesn't exist. Because it skips the password it must never be reachable on a real deployment, so turn it off there.
 
 ### `POST /api/operator/courses/:courseId/roster`
 
@@ -114,7 +118,16 @@ The whole file is checked before anything is saved. If any row can't be used, no
 
 The reasons are `no login id`, `no account for that email` and `row is for a different course`. A file with no login or email column at all gets `400` with `fields: ["header"]`, and an empty file gets `fields: ["file"]`. An unknown course gets `409`.
 
-Students need an account first. The import only puts existing accounts on a roster, it doesn't create any.
+**Accounts.** By default a student who has no account fails the row (`no account for that email`), since the SDD has no sign up. Add `?createAccounts=true` to make an account for each of those students instead. Each gets a random 10 character first password, which comes back once in the answer and is only saved hashed:
+
+```json
+{
+  "enrolled": 36, "added": 36, "created": 2,
+  "accounts": [{ "email": "axr101@case.edu", "name": "Alex Rivera", "password": "k7Hn2pQwXe" }]
+}
+```
+
+The answer is sent with `Cache-Control: no-store`. The names come from the Canvas `Student` column ("Last, First" becomes "First Last"). Hand the passwords out, and students change them with `PUT /api/me/password`.
 
 ### `GET /api/courses/:courseId/candidates`
 

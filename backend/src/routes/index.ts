@@ -3,8 +3,8 @@ import { getHealth } from '../controllers/health.controller';
 import { getCandidates } from '../controllers/candidates.controller';
 import { getDemoRoster } from '../controllers/demo.controller';
 import { demoSignIn, demoSignInBody } from '../controllers/demoSession.controller';
-import { getCurrentStudent } from '../controllers/me.controller';
-import { importRosterFile } from '../controllers/roster.controller';
+import { changePassword, getCurrentStudent, passwordBody } from '../controllers/me.controller';
+import { importRosterFile, rosterQuery } from '../controllers/roster.controller';
 import { signIn, signInBody, signOut } from '../controllers/session.controller';
 import { config } from '../config';
 import { requireOperator } from '../middleware/operator';
@@ -19,7 +19,7 @@ export const apiRouter = Router();
 apiRouter.get('/health', getHealth);
 
 // demo only, lets the frontend pick a student until everyone has their own login
-if (config.env !== 'production') {
+if (config.demoRoutes) {
   apiRouter.get('/demo/roster', getDemoRoster);
 }
 
@@ -30,7 +30,7 @@ apiRouter.post(
   '/operator/courses/:courseId/roster',
   requireOperator,
   express.text({ type: ['text/csv', 'text/plain', 'application/vnd.ms-excel'], limit: '1mb' }),
-  validate({ params: courseParams }),
+  validate({ params: courseParams, query: rosterQuery }),
   importRosterFile
 );
 
@@ -42,7 +42,7 @@ apiRouter.post('/session', validate({ body: signInBody }), signIn);
 apiRouter.delete('/session', signOut);
 
 // demo only, signs you in as the student picked from the roster above
-if (config.env !== 'production') {
+if (config.demoRoutes) {
   apiRouter.post('/demo/session', validate({ body: demoSignInBody }), demoSignIn);
 }
 
@@ -50,6 +50,7 @@ if (config.env !== 'production') {
 apiRouter.use(requireStudent);
 
 apiRouter.get('/me', getCurrentStudent);
+apiRouter.put('/me/password', validate({ body: passwordBody }), changePassword);
 
 // matching
 apiRouter.get('/courses/:courseId/candidates', validate({ params: courseParams }), getCandidates);

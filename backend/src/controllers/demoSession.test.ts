@@ -87,3 +87,18 @@ describe('in production', () => {
     expect(login.status).toBe(200);
   });
 });
+
+describe('with DEMO_ROUTES=false', () => {
+  it('has no demo routes even outside production', async () => {
+    vi.stubEnv('DEMO_ROUTES', 'false');
+    vi.stubEnv('LOG_LEVEL', 'silent');
+    vi.resetModules();
+    const { createApp: createOffApp } = await import('../app.js');
+    const off = createOffApp();
+
+    const res = await request(off).post('/api/demo/session').set(CLIENT).send({ studentId: '101' });
+    expect(res.status).toBe(401);
+    expect(res.headers['set-cookie']).toBeUndefined();
+    expect((await request(off).get('/api/demo/roster')).status).toBe(401);
+  });
+});

@@ -11,8 +11,8 @@
     "smoke:demo": "node scripts/smoke.mjs http://localhost:4173",
     "test": "npm test --prefix backend",
     "typecheck": "npm run typecheck --prefix backend && npm run typecheck --prefix frontend",
-    "db:up": "docker compose up -d --wait && cd backend && npx prisma migrate deploy",
-    "db:migrate": "cd backend && npx prisma migrate deploy",
+    "db:up": "docker compose up -d --wait && npm run db:migrate",
+    "db:migrate": "cd backend && node scripts/migrate.mjs",
     "db:seed": "cd backend && npx prisma db seed",
     "db:down": "docker compose down",
     "coverage": "npm run test:coverage --prefix backend"

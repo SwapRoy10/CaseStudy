@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import argon2 from 'argon2';
 
 // passwords are hashed with argon2id (sdd 9.3). the library picks a random salt
@@ -13,4 +14,13 @@ export async function verifyPassword(hash: string, password: string): Promise<bo
   } catch {
     return false;
   }
+}
+
+// a first password for an account the operator creates. no 0/O or 1/l/I so it
+// can be read off a printout without mistakes.
+const LETTERS = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function generatePassword(length = 10): string {
+  let password = '';
+  for (let i = 0; i < length; i++) password += LETTERS[randomInt(LETTERS.length)];
+  return password;
 }

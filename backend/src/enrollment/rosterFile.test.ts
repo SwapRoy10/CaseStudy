@@ -11,7 +11,7 @@ describe('parseRosterFile, canvas gradebook export', () => {
 
   it('builds the school email from the login id', () => {
     const csv = [header, '"Rivera, Alex",1,2,axr101,A,90'].join('\n');
-    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 2, email: 'axr101@case.edu' }]);
+    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 2, email: 'axr101@case.edu', name: 'Alex Rivera' }]);
   });
 
   it('uses a login id that is already an email as is', () => {
@@ -32,7 +32,7 @@ describe('parseRosterFile, canvas gradebook export', () => {
       '"Student, Test",99,,,A,',
       '"Rivera, Alex",1,2,axr101,A,90',
     ].join('\n');
-    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 5, email: 'axr101@case.edu' }]);
+    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 5, email: 'axr101@case.edu', name: 'Alex Rivera' }]);
   });
 
   it('flags a student with no login id instead of skipping them', () => {
@@ -47,12 +47,12 @@ describe('parseRosterFile, canvas gradebook export', () => {
 
   it('works with windows line breaks and a byte order mark', () => {
     const csv = '﻿' + [header, '"Rivera, Alex",1,2,axr101,A,90'].join('\r\n') + '\r\n';
-    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 2, email: 'axr101@case.edu' }]);
+    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 2, email: 'axr101@case.edu', name: 'Alex Rivera' }]);
   });
 
   it('accepts a plain email column too', () => {
     const csv = ['Name,Email', 'Alex,axr101@case.edu'].join('\n');
-    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 2, email: 'axr101@case.edu' }]);
+    expect(parseRosterFile(csv, DOMAIN)).toEqual([{ row: 2, email: 'axr101@case.edu', name: 'Alex' }]);
   });
 
   it('reads the sample export in the database folder', () => {
@@ -61,7 +61,17 @@ describe('parseRosterFile, canvas gradebook export', () => {
     // 36 students, and the points row and test student are left out
     expect(rows).toHaveLength(36);
     expect(rows.every((r) => !r.problem && r.email.endsWith('@case.edu'))).toBe(true);
-    expect(rows[0]).toEqual({ row: 3, email: 'mxc1001@case.edu' });
+    expect(rows[0]).toEqual({ row: 3, email: 'mxc1001@case.edu', name: 'Maya Chen' });
+  });
+
+  it('turns Last, First into First Last, and leaves a name without a comma alone', () => {
+    const csv = [header, '"Van Der Berg, Jan Willem",1,2,jvb1,A,', 'Cher,3,4,cher2,A,'].join('\n');
+    expect(parseRosterFile(csv, DOMAIN).map((r) => r.name)).toEqual(['Jan Willem Van Der Berg', 'Cher']);
+  });
+
+  it('has no name when the cell is empty', () => {
+    const csv = [header, ',1,2,axr101,A,'].join('\n');
+    expect(parseRosterFile(csv, DOMAIN)[0].name).toBeUndefined();
   });
 
   it('rejects a file with no login id or email column', () => {

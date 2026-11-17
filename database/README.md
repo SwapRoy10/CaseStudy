@@ -8,7 +8,7 @@ You need Docker Desktop running.
 
 ```sh
 cp backend/.env.example backend/.env    # then set DATABASE_URL, see below
-npm run db:up       # starts postgres in docker and applies the migrations
+npm run db:up       # starts postgres in docker and applies the migrations (npm run db:migrate on its own does just that part)
 npm run db:seed     # loads the sample students and courses
 npm run dev         # backend now reads from postgres instead of the mock list
 npm run db:down     # stops postgres (your data is kept)
@@ -43,8 +43,8 @@ npm run demo
 
 Two things to watch:
 
-* The seed saves students and courses under fixed ids (courses 1 to 5, students 101 to 108, 501, 999 and 1001 up), and a rerun overwrites rows with those ids. Only seed a database that is for the demo.
-* `npm test` seeds the database in `DATABASE_URL` before it runs and some tests add and delete rows. Run tests against the local docker database, not Supabase.
+* The seed saves students and courses under fixed ids (courses 1 to 5, students 101 to 108, 501, 999 and 1001 up), and a rerun puts those rows back the way the file says. Before it writes anything it checks that those ids belong to sample data (a sample student has the demo password) and stops with a message if one belongs to somebody else. `SEED_FORCE=true` skips the check.
+* `npm test` seeds the database in `DATABASE_URL` before it runs and some tests add and delete rows, so it only touches a database on this machine. If `DATABASE_URL` points anywhere else the database tests skip themselves and say so. Set `ALLOW_REMOTE_DB_TESTS=true` to override that.
 
 ## What gets seeded
 

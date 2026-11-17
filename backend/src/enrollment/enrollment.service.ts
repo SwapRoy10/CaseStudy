@@ -1,3 +1,4 @@
+import { generatePassword, hashPassword } from '../auth/password';
 import { config } from '../config';
 import { prisma } from '../db';
 import { ValidationError, StateConflictError, toId } from '../errors';
@@ -8,11 +9,25 @@ export interface BadRow {
   reason: string;
 }
 
+// an account made during an import, with the first password to hand to the student
+export interface CreatedAccount {
+  email: string;
+  name: string;
+  password: string;
+}
+
 // puts the students in a roster file on one course's roster. the whole file is
 // checked before anything is written, so one bad row means nothing changes.
 // the file can be the sdd format or a canvas gradebook export (see rosterFile.ts).
 // a failed import says why each row failed, which is what the api sends back.
-export async function importRosterWithReasons(courseIdRaw: string | bigint, text: string) {
+// with createAccounts, a student who has no account yet gets one made with a random
+// first password instead of the row failing (there's no sign up, so this is how
+// accounts get made). the passwords come back once and are never saved in plain text.
+export async function importRosterWithReasons(
+  courseIdRaw: string | bigint,
+  text: string,
+  options: { createAccounts?: boolean } = {}
+) {
   const courseId = toId(courseIdRaw, 'courseId');
   const course = await prisma.course.findUnique({ where: { id: courseId } });
   if (!course) throw new StateConflictError('COURSE_NOT_FOUND');
@@ -29,8 +44,10 @@ export async function importRosterWithReasons(courseIdRaw: string | bigint, text
   const idByEmail = new Map(students.map((s) => [s.schoolEmail.toLowerCase(), s.id]));
 
   const badRows: BadRow[] = [];
+  const toCreate = new Map<string, string>(); // email -> name
   for (const r of rows) {
     if (r.problem) badRows.push({ row: r.row, reason: r.problem });
+    else if (!idByEmail.has(r.email) && options.createAccounts) toCreate.set(r.email, r.name ?? r.email.split('@')[0]);
     else if (!idByEmail.has(r.email)) badRows.push({ row: r.row, reason: 'no account for that email' });
     else if (r.course && (r.course.code !== course.code || r.course.section !== course.section || r.course.term !== course.term)) {
       badRows.push({ row: r.row, reason: 'row is for a different course' });
@@ -38,15 +55,31 @@ export async function importRosterWithReasons(courseIdRaw: string | bigint, text
   }
   if (badRows.length) return { ok: false as const, rows: badRows };
 
-  // a student listed twice is still one enrollment
-  const studentIds = [...new Set(rows.map((r) => idByEmail.get(r.email)!))];
-  const result = await prisma.$transaction((tx) =>
-    tx.enrollment.createMany({
+  // hashing is slow on purpose, so it's done before the transaction starts
+  const accounts: CreatedAccount[] = [...toCreate].map(([email, name]) => ({ email, name, password: generatePassword() }));
+  const hashes = await Promise.all(accounts.map((a) => hashPassword(a.password)));
+
+  const result = await prisma.$transaction(async (tx) => {
+    if (accounts.length) {
+      await tx.student.createMany({
+        data: accounts.map((a, i) => ({ name: a.name, schoolEmail: a.email, passwordHash: hashes[i] })),
+      });
+      const made = await tx.student.findMany({
+        where: { schoolEmail: { in: accounts.map((a) => a.email) } },
+        select: { id: true, schoolEmail: true },
+      });
+      made.forEach((s) => idByEmail.set(s.schoolEmail.toLowerCase(), s.id));
+    }
+
+    // a student listed twice is still one enrollment
+    const studentIds = [...new Set(rows.map((r) => idByEmail.get(r.email)!))];
+    const enrolled = await tx.enrollment.createMany({
       data: studentIds.map((studentId) => ({ studentId, courseId })),
       skipDuplicates: true,
-    }),
-  );
-  return { ok: true as const, added: result.count, total: studentIds.length };
+    });
+    return { added: enrolled.count, total: studentIds.length };
+  });
+  return { ok: true as const, ...result, accounts };
 }
 
 // the same import with the original answer shape: a failed import is just the row

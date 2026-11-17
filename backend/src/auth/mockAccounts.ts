@@ -12,10 +12,31 @@ function getDemoHash() {
   return demoHash;
 }
 
+// passwords changed since the server started. the sample students don't really
+// change, so this only lives as long as the process.
+const changed = new Map<string, string>();
+
+async function toAccount(student: (typeof students)[number]): Promise<Account> {
+  return {
+    id: student.id,
+    name: student.name,
+    passwordHash: changed.get(student.id) ?? (await getDemoHash()),
+    tutorialCompleted: false,
+  };
+}
+
 export async function findAccountByEmail(email: string): Promise<Account | null> {
   const student = students.find((s) => s.email.toLowerCase() === email.toLowerCase());
-  if (!student) return null;
-  return { id: student.id, name: student.name, passwordHash: await getDemoHash(), tutorialCompleted: false };
+  return student ? toAccount(student) : null;
+}
+
+export async function findAccountById(studentId: string): Promise<Account | null> {
+  const student = students.find((s) => s.id === studentId);
+  return student ? toAccount(student) : null;
+}
+
+export async function setPasswordHash(studentId: string, passwordHash: string): Promise<void> {
+  changed.set(studentId, passwordHash);
 }
 
 export async function getMe(studentId: string): Promise<Me | null> {
