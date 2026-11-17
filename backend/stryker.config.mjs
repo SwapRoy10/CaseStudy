@@ -15,7 +15,7 @@ export default {
   reporters: ['clear-text', 'html', 'progress'],
   coverageAnalysis: 'perTest',
   // the tests that need postgres are skipped here, they don't touch this code
-  vitest: { related: false },
+  vitest: { related: false, configFile: 'vitest.stryker.config.mts' },
   tempDirName: '.stryker-tmp',
   // stryker's tsconfig step breaks on our typescript version and we don't use
   // project references anyway, so point it at nothing to skip that step

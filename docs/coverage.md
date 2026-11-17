@@ -18,16 +18,18 @@ cd backend && npm run test:coverage
 
 The report opens from `backend/coverage/index.html`. The run fails if coverage drops below 90% of statements, lines and functions, or 80% of branches (`backend/vitest.config.mts`). CI starts its own Postgres, so the database tests count, and the HTML report can be downloaded from each run.
 
-Results on November 12, 2026, 122 tests:
+Results on November 17, 2026, with Postgres running: 439 tests passed, 9 skipped (the skipped ones only run without a database).
 
 | Criterion | Coverage |
 |---|---|
-| Statements | 96.1% |
-| Branches | 85.0% |
-| Functions | 95.6% |
-| Lines | 97.1% |
+| Statements | 97.6% |
+| Branches | 91.8% |
+| Functions | 96.5% |
+| Lines | 98.4% |
 
-Without a database the same suite only reaches about 70% of lines, because the database tests skip. That's why CI runs with Postgres.
+Without a database the same suite only reaches about 72% of lines, because the database tests skip. That's why CI runs with Postgres.
+
+The least covered folder is `src/profile`, at 76% of functions. Two functions in `profile.service.ts`, `listCourses` and `completeTutorial`, are never called because newer code replaced them.
 
 **How we use it.** Coverage tells us where to look. It isn't a score to chase. When a file comes up short, we check the SRS and SDD and write tests for what they say. For example, the seed code and the no-database roster weren't covered. Their new tests check two things the docs promise: that the seed can be rerun safely, and that the mock data and the database return the same roster.
 
@@ -47,6 +49,9 @@ Stryker makes small changes, called mutants, to `availability.ts`, `stages.ts`, 
 |---|---|---|---|---|
 | First | 234 | 232 | 2 | 99.15% |
 | After two new tests | 234 | 234 | 0 | 100% |
+| November 17, after merging the redesign PR | 234 | 234 | 0 | 100% |
+
+Stryker runs the tests in a copy of the `backend` folder, so `vitest.stryker.config.mts` skips `rosterFile.test.ts`, which reads the sample export from the `database` folder. That test doesn't touch the matching code.
 
 The two survivors were missing boundary tests in `isValidBlock`:
 
@@ -64,4 +69,3 @@ Both edges come from SDD 5.1, and both now have tests.
 
 * The frontend has no automated tests, so it has no coverage numbers. Screen tests are checked by hand.
 * Mutation testing only covers the matching engine.
-* Match requests, groups, peer review and sign in aren't built yet, so their test cases can't run.
