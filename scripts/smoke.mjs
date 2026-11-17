@@ -77,12 +77,11 @@ const checks = [
     assert(res.status === 200, `status ${res.status}`);
     assert(Array.isArray(body.candidates) && body.candidates.length > 0, 'expected at least one candidate');
   }],
-  ['request routes answer for a signed-in student (503 when there is no database)', async () => {
+  ['request routes answer for a signed-in student', async () => {
     const { cookie } = await signIn('axr101@case.edu');
     const res = await fetch(`${base}/api/courses/1/requests`, { headers: { Cookie: cookie } });
-    assert([200, 503].includes(res.status), `status ${res.status}`);
     const body = await res.json();
-    assert(res.status === 503 ? body.error?.code === 'UNAVAILABLE' : Array.isArray(body.requests), 'unexpected body');
+    assert(res.status === 200 && Array.isArray(body.requests), `status ${res.status}`);
   }],
   ['incomplete profile gets 409 NO_PROFILE', async () => {
     const { cookie } = await signIn('gxl107@case.edu');

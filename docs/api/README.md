@@ -137,9 +137,9 @@ The reasons are `no login id`, `no account for that email` and `row is for a dif
 
 The answer is sent with `Cache-Control: no-store`. The names come from the Canvas `Student` column ("Last, First" becomes "First Last"). Hand the passwords out, and students change them with `PUT /api/me/password`.
 
-### Needs the database
+### With and without a database
 
-Everything from here down to the peer reviews (profile saves, requests, groups, reviews) writes to the database and has no in memory version. With no `DATABASE_URL`, which is the mock data demo, these answer `503 UNAVAILABLE` with a message saying to set it. Matching, sign in and `/api/me` still work without one.
+Profile saves, requests, groups and reviews work either way. With a `DATABASE_URL` they use Postgres. Without one (the mock data demo) they use an in memory copy of the sample data in `src/memory/`, which keeps whatever students do until the server stops. Both follow the same rules and give the same errors. Everything starts again from the sample data on a restart, and a password change or the tutorial flag does too.
 
 ### `GET /api/courses/:courseId/profile` and `PUT /api/courses/:courseId/profile`
 

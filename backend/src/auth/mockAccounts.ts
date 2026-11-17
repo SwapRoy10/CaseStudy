@@ -1,5 +1,6 @@
 import { currentTerm } from '../courses/listCourses';
-import { DEMO_PASSWORD, courses, enrollments, profiles, students } from '../sampleData';
+import { store } from '../memory/store';
+import { DEMO_PASSWORD, courses, enrollments, students } from '../sampleData';
 import { hashPassword } from './password';
 import { Account, Me } from './types';
 
@@ -64,7 +65,7 @@ export async function getMe(studentId: string): Promise<Me | null> {
         title: course.title,
         section: course.section,
         term: course.term,
-        hasProfile: profiles.some((p) => p.studentId === studentId && p.courseId === course.id),
+        hasProfile: store.profiles.some((p) => p.studentId === studentId && p.courseId === course.id),
       })),
   };
 }
