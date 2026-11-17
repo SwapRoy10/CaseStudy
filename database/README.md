@@ -44,7 +44,7 @@ npm run demo
 Two things to watch:
 
 * The seed saves students and courses under fixed ids (courses 1 to 5, students 101 to 108, 501, 999 and 1001 up), and a rerun overwrites rows with those ids. Only seed a database that is for the demo.
-* `npm test` seeds the database in `DATABASE_URL` before it runs and some tests add and delete rows. Run tests against the local docker database, not Supabase.
+* `npm test` seeds the database in `DATABASE_URL` before it runs and some tests add and delete rows, so it only touches a database on this machine. If `DATABASE_URL` points anywhere else the database tests skip themselves and say so. Set `ALLOW_REMOTE_DB_TESTS=true` to override that.
 
 ## What gets seeded
 
