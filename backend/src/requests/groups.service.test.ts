@@ -99,7 +99,7 @@ describe.skipIf(config.useMockData)('groups and matched profiles', () => {
         schoolEmail: expect.stringMatching(/@test\.edu$/),
         gradeGoal: 'A_TRACK',
         workStyle: 'SOLO',
-        reviewAverage: 'Not yet rated',
+        reviewAverage: null,
       });
       // the whole availability, not just the part that overlaps
       expect(profile.blocks).toEqual([
@@ -158,7 +158,7 @@ describe.skipIf(config.useMockData)('groups and matched profiles', () => {
           { criteriaName: 'Contribution', rating: 3 },
         ],
       });
-      expect((await getMatchedProfile(ids[a], course, ids[b].toString())).reviewAverage).toBe('4.0');
+      expect((await getMatchedProfile(ids[a], course, ids[b].toString())).reviewAverage).toBe(4);
     });
   });
 });

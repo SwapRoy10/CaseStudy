@@ -143,14 +143,14 @@ Everything from here down to the peer reviews (profile saves, requests, groups, 
 
 ### `GET /api/courses/:courseId/profile` and `PUT /api/courses/:courseId/profile`
 
-Signed in. `GET` gives the student's own saved profile for the course. Before anything is saved `gradeGoal` and `workStyle` are `null` and `blocks` is empty. `reviewAverage` is the string `Not yet rated` or a number like `3.2`.
+Signed in. `GET` gives the student's own saved profile for the course, or `null` if they haven't saved one (SDD 6.3.2). `reviewAverage` is a number, or `null` when nobody has rated them yet, which the screens write as "Not yet rated". It is rounded to one decimal.
 
 ```json
 {
   "courseId": "1", "name": "Alex Rivera", "schoolEmail": "axr101@case.edu",
   "gradeGoal": "A_TRACK", "workStyle": "GROUP",
   "blocks": [{ "weekday": 1, "startMinute": 540, "endMinute": 660 }],
-  "reviewAverage": "Not yet rated"
+  "reviewAverage": null
 }
 ```
 

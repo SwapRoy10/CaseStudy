@@ -188,7 +188,7 @@ describe.skipIf(config.useMockData)('requests, groups and reviews over http', ()
     expect(member.reviewedByMe).toBe(true);
 
     const profile = await get(`/api/courses/${course}/profile`, bea);
-    expect(profile.body.reviewAverage).toBe('4.0');
+    expect(profile.body.reviewAverage).toBe(4);
   });
 
   it('lets a sender cancel: the recipient list drops it, the sender history keeps it', async () => {

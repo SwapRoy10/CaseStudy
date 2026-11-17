@@ -24,7 +24,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
   const [gradeGoal, setGradeGoal] = useState<GradeGoal | ''>('');
   const [workStyle, setWorkStyle] = useState<WorkStyle | ''>('');
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([NEW_BLOCK]);
-  const [average, setAverage] = useState('Not yet rated');
+  const [average, setAverage] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -42,10 +42,11 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
     api
       .getProfile(courseId)
       .then((p) => {
-        setGradeGoal(p.gradeGoal ?? '');
-        setWorkStyle(p.workStyle ?? '');
-        setBlocks(p.blocks.length > 0 ? p.blocks : [NEW_BLOCK]);
-        setAverage(p.reviewAverage);
+        // null means nothing is saved for this course yet
+        setGradeGoal(p ? p.gradeGoal : '');
+        setWorkStyle(p ? p.workStyle : '');
+        setBlocks(p && p.blocks.length > 0 ? p.blocks : [NEW_BLOCK]);
+        setAverage(p ? p.reviewAverage : null);
       })
       .catch((err: unknown) => setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.'))
       .finally(() => setLoading(false));
@@ -101,7 +102,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
     <section>
       <h2>My profile</h2>
       <p className="muted">Tell us how you like to study. We use this to find your matches.</p>
-      <p className="muted">Your review average: {average === 'Not yet rated' ? average : `${average} out of 5`}</p>
+      <p className="muted">Your review average: {average === null ? 'Not yet rated' : `${average.toFixed(1)} out of 5`}</p>
 
       <div className="form-field">
         <label htmlFor="grade-goal">Grade goal</label>

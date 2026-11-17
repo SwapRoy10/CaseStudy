@@ -1,5 +1,6 @@
 import { prisma } from '../db';
 import { ForbiddenError, toId } from '../errors';
+import { toOwnProfile } from '../profile/ownProfile';
 import { getOwnProfile } from '../profile/profile.service';
 import { REVIEW_CRITERIA } from '../reviews/criteria';
 import { GroupView } from './types';
@@ -57,5 +58,7 @@ export async function getMatchedProfile(studentId: bigint, courseIdRaw: string, 
   });
   if (!accepted) throw new ForbiddenError();
 
-  return { studentId: otherId.toString(), ...(await getOwnProfile(otherId, courseId)) };
+  const profile = toOwnProfile(await getOwnProfile(otherId, courseId));
+  if (!profile) throw new ForbiddenError();
+  return { studentId: otherId.toString(), ...profile };
 }
