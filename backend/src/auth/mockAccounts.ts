@@ -15,13 +15,14 @@ function getDemoHash() {
 // passwords changed since the server started. the sample students don't really
 // change, so this only lives as long as the process.
 const changed = new Map<string, string>();
+const tutorialDone = new Set<string>();
 
 async function toAccount(student: (typeof students)[number]): Promise<Account> {
   return {
     id: student.id,
     name: student.name,
     passwordHash: changed.get(student.id) ?? (await getDemoHash()),
-    tutorialCompleted: false,
+    tutorialCompleted: tutorialDone.has(student.id),
   };
 }
 
@@ -35,6 +36,10 @@ export async function findAccountById(studentId: string): Promise<Account | null
   return student ? toAccount(student) : null;
 }
 
+export async function markTutorialComplete(studentId: string): Promise<void> {
+  tutorialDone.add(studentId);
+}
+
 export async function setPasswordHash(studentId: string, passwordHash: string): Promise<void> {
   changed.set(studentId, passwordHash);
 }
@@ -45,7 +50,7 @@ export async function getMe(studentId: string): Promise<Me | null> {
   return {
     studentId: student.id,
     name: student.name,
-    tutorialCompleted: false,
+    tutorialCompleted: tutorialDone.has(studentId),
     courses: enrollments
       .filter((e) => e.studentId === studentId)
       .map((e) => {

@@ -9,4 +9,5 @@ const source = config.useMockData ? mock : postgres;
 export const findAccountByEmail = source.findAccountByEmail;
 export const findAccountById = source.findAccountById;
 export const setPasswordHash = source.setPasswordHash;
+export const markTutorialComplete = source.markTutorialComplete;
 export const getMe = source.getMe;

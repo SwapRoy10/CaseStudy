@@ -1,0 +1,269 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import request from 'supertest';
+import { createApp } from './app';
+import { COOKIE_NAME, createToken } from './auth/sessionToken';
+import { config } from './config';
+import { prisma } from './db';
+import { REVIEW_CRITERIA } from './reviews/criteria';
+import { makeClass } from './requests/testUtils';
+
+// the whole flow over http: browse, send a request, answer it, see the group,
+// the full profile, and review each other. the services have their own tests,
+// these check the routes, the status codes and the error bodies.
+
+const app = createApp();
+const CLIENT = { 'X-Requested-With': 'CaseStudy' };
+const as = (id: bigint) => ({ Cookie: `${COOKIE_NAME}=${createToken(id.toString())}` });
+
+describe.skipIf(config.useMockData)('requests, groups and reviews over http', () => {
+  let course: string;
+  let ids: bigint[];
+  let cleanup: () => Promise<void>;
+  const [alex, bea, cy, dee] = [0, 1, 2, 3];
+
+  beforeAll(async () => {
+    const made = await makeClass(`fl${Date.now()}`, [{}, { style: 'SOLO' }, { goal: 'PASS_TRACK' }, {}]);
+    course = made.courseId.toString();
+    ids = made.ids;
+    cleanup = made.cleanup;
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await prisma.$disconnect();
+  });
+
+  const post = (url: string, who: number, body?: object) =>
+    request(app).post(url).set(CLIENT).set(as(ids[who])).send(body ?? {});
+  const get = (url: string, who: number) => request(app).get(url).set(as(ids[who]));
+
+  let requestId: string;
+  let groupId: string;
+
+  it('shows alex the classmates who match, but not cy (other grade goal)', async () => {
+    const res = await get(`/api/courses/${course}/candidates`, alex);
+    expect(res.status).toBe(200);
+    expect(res.body.candidates.map((c: { candidateId: string }) => c.candidateId).sort()).toEqual(
+      [ids[bea], ids[dee]].map(String).sort()
+    );
+  });
+
+  it('sends a request, and says 201 with the pending record', async () => {
+    const res = await post(`/api/courses/${course}/requests`, alex, { recipientId: ids[bea].toString() });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ status: 'PENDING', requesterId: ids[alex].toString(), recipientId: ids[bea].toString() });
+    requestId = res.body.requestId;
+  });
+
+  it('a second one to the same person is a 409 DUPLICATE_REQUEST with a readable message', async () => {
+    const res = await post(`/api/courses/${course}/requests`, alex, { recipientId: ids[bea].toString() });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toEqual({
+      code: 'CONFLICT',
+      reason: 'DUPLICATE_REQUEST',
+      message: 'You already sent this classmate a request.',
+    });
+  });
+
+  it('a request to someone who no longer matches is a 409 NO_LONGER_ELIGIBLE', async () => {
+    const res = await post(`/api/courses/${course}/requests`, alex, { recipientId: ids[cy].toString() });
+    expect(res.status).toBe(409);
+    expect(res.body.error.reason).toBe('NO_LONGER_ELIGIBLE');
+  });
+
+  it('a request to yourself or a bad id is a 400', async () => {
+    const self = await post(`/api/courses/${course}/requests`, alex, { recipientId: ids[alex].toString() });
+    expect(self.status).toBe(400);
+    expect(self.body.error).toMatchObject({ code: 'VALIDATION', fields: ['recipientId'] });
+    const bad = await post(`/api/courses/${course}/requests`, alex, { recipientId: 'abc' });
+    expect(bad.status).toBe(400);
+  });
+
+  it('both of them see it, and bea sees what alex looks like without a name', async () => {
+    const mine = await get(`/api/courses/${course}/requests`, alex);
+    expect(mine.body.requests).toHaveLength(1);
+
+    const theirs = await get(`/api/courses/${course}/requests`, bea);
+    expect(theirs.body.requests[0]).toMatchObject({ requestId, status: 'PENDING' });
+    expect(theirs.body.requests[0].other).toMatchObject({
+      candidateId: ids[alex].toString(),
+      gradeGoal: 'A_TRACK',
+      workStyle: 'GROUP',
+    });
+    expect(JSON.stringify(theirs.body)).not.toMatch(/Student |@test\.edu/);
+  });
+
+  it('dee, who is not part of it, sees nothing', async () => {
+    const res = await get(`/api/courses/${course}/requests`, dee);
+    expect(res.body.requests).toEqual([]);
+  });
+
+  it('keeps full profiles hidden while it is pending: 403', async () => {
+    const res = await get(`/api/courses/${course}/members/${ids[bea]}`, alex);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('alex can not answer his own request: 403', async () => {
+    const res = await post(`/api/requests/${requestId}/response`, alex, { decision: 'ACCEPT' });
+    expect(res.status).toBe(403);
+  });
+
+  it('a decision that is not ACCEPT or DECLINE is a 400', async () => {
+    const res = await post(`/api/requests/${requestId}/response`, bea, { decision: 'MAYBE' });
+    expect(res.status).toBe(400);
+  });
+
+  it('bea accepts, and the answer says ACCEPTED', async () => {
+    const res = await post(`/api/requests/${requestId}/response`, bea, { decision: 'ACCEPT' });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ACCEPTED');
+  });
+
+  it('answering it again is a 409 NOT_PENDING, and canceling it too', async () => {
+    const again = await post(`/api/requests/${requestId}/response`, bea, { decision: 'DECLINE' });
+    expect(again.status).toBe(409);
+    expect(again.body.error.reason).toBe('NOT_PENDING');
+    const canceled = await post(`/api/requests/${requestId}/cancel`, alex);
+    expect(canceled.status).toBe(409);
+  });
+
+  it('puts them both in a group, with the review criteria', async () => {
+    const res = await get(`/api/courses/${course}/group`, alex);
+    expect(res.status).toBe(200);
+    expect(res.body.group.members.map((m: { studentId: string }) => m.studentId)).toEqual(
+      [ids[alex], ids[bea]].map(String)
+    );
+    expect(res.body.group.criteria).toEqual(REVIEW_CRITERIA);
+    groupId = res.body.group.groupId;
+
+    const none = await get(`/api/courses/${course}/group`, dee);
+    expect(none.status).toBe(200);
+    expect(none.body.group).toBeNull();
+  });
+
+  it('now shows alex the full profile of bea, with her email', async () => {
+    const bea_row = await prisma.student.findUniqueOrThrow({ where: { id: ids[bea] } });
+    const res = await get(`/api/courses/${course}/members/${ids[bea]}`, alex);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ studentId: ids[bea].toString(), schoolEmail: bea_row.schoolEmail });
+  });
+
+  it('still hides it from dee', async () => {
+    const res = await get(`/api/courses/${course}/members/${ids[bea]}`, dee);
+    expect(res.status).toBe(403);
+  });
+
+  it('rejects a review that leaves out a criterion: 400 naming the field', async () => {
+    const res = await post(`/api/groups/${groupId}/reviews`, alex, {
+      revieweeId: ids[bea].toString(),
+      ratings: [{ criteriaName: 'Communication', rating: 5 }],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatchObject({ code: 'VALIDATION', fields: ['ratings'] });
+  });
+
+  it('takes a good review with 201 and the new average', async () => {
+    const res = await post(`/api/groups/${groupId}/reviews`, alex, {
+      revieweeId: ids[bea].toString(),
+      ratings: REVIEW_CRITERIA.map((criteriaName) => ({ criteriaName, rating: 4 })),
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.revieweeAverage).toBe(4);
+  });
+
+  it('a second review of bea is a 409 DUPLICATE_REVIEW, and dee can not review anyone in the group', async () => {
+    const ratings = REVIEW_CRITERIA.map((criteriaName) => ({ criteriaName, rating: 2 }));
+    const again = await post(`/api/groups/${groupId}/reviews`, alex, { revieweeId: ids[bea].toString(), ratings });
+    expect(again.status).toBe(409);
+    expect(again.body.error.reason).toBe('DUPLICATE_REVIEW');
+
+    const outsider = await post(`/api/groups/${groupId}/reviews`, dee, { revieweeId: ids[bea].toString(), ratings });
+    expect(outsider.status).toBe(403);
+  });
+
+  it('shows alex that he reviewed bea, and bea her new average on her profile', async () => {
+    const group = await get(`/api/courses/${course}/group`, alex);
+    const member = group.body.group.members.find((m: { studentId: string }) => m.studentId === ids[bea].toString());
+    expect(member.reviewedByMe).toBe(true);
+
+    const profile = await get(`/api/courses/${course}/profile`, bea);
+    expect(profile.body.reviewAverage).toBe('4.0');
+  });
+
+  it('lets a sender cancel: the recipient list drops it, the sender history keeps it', async () => {
+    const sent = await post(`/api/courses/${course}/requests`, dee, { recipientId: ids[alex].toString() });
+    expect(sent.status).toBe(201);
+
+    const canceled = await post(`/api/requests/${sent.body.requestId}/cancel`, dee);
+    expect(canceled.status).toBe(200);
+    expect(canceled.body.status).toBe('CANCELED');
+
+    const theirs = await get(`/api/courses/${course}/requests`, alex);
+    expect(theirs.body.requests.find((r: { requestId: string }) => r.requestId === sent.body.requestId)).toBeUndefined();
+    const mine = await get(`/api/courses/${course}/requests`, dee);
+    expect(mine.body.requests.find((r: { requestId: string }) => r.requestId === sent.body.requestId).status).toBe('CANCELED');
+  });
+
+  it('a cancel from anyone but the sender is a 403', async () => {
+    const sent = await post(`/api/courses/${course}/requests`, dee, { recipientId: ids[alex].toString() });
+    const res = await post(`/api/requests/${sent.body.requestId}/cancel`, alex);
+    expect(res.status).toBe(403);
+  });
+
+  it('dee joins the group of alex and bea when alex says yes', async () => {
+    const list = await get(`/api/courses/${course}/requests`, alex);
+    const pending = list.body.requests.find((r: { status: string }) => r.status === 'PENDING');
+    // alex is in a group already and dee is not, so dee is added to it
+    const res = await post(`/api/requests/${pending.requestId}/response`, alex, { decision: 'ACCEPT' });
+    expect(res.status).toBe(200);
+    const group = await get(`/api/courses/${course}/group`, dee);
+    expect(group.body.group.members).toHaveLength(3);
+  });
+});
+
+describe('who can call these routes', () => {
+  const routes: [string, string][] = [
+    ['get', '/api/courses/1/requests'],
+    ['post', '/api/courses/1/requests'],
+    ['post', '/api/requests/1/response'],
+    ['post', '/api/requests/1/cancel'],
+    ['get', '/api/courses/1/group'],
+    ['get', '/api/courses/1/members/102'],
+    ['post', '/api/groups/1/reviews'],
+    ['get', '/api/courses/1/profile'],
+    ['put', '/api/courses/1/profile'],
+    ['post', '/api/me/tutorial-complete'],
+  ];
+  type Call = (url: string) => request.Test;
+  const call = (method: string, url: string) => (request(app) as unknown as Record<string, Call>)[method](url);
+
+  it.each(routes)('%s %s needs a signed in student', async (method, url) => {
+    const res = await call(method, url).set(CLIENT).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it.each(routes.filter(([method]) => method !== 'get'))('%s %s needs the client header', async (method, url) => {
+    const res = await call(method, url).set(as(101n)).send({});
+    expect(res.status).toBe(403);
+  });
+});
+
+// with no DATABASE_URL these have nowhere to write, and say so
+describe.skipIf(!config.useMockData)('without a database', () => {
+  it('answers 503 with a message that says what to do', async () => {
+    const res = await request(app)
+      .post('/api/courses/1/requests')
+      .set(CLIENT)
+      .set(as(101n))
+      .send({ recipientId: '102' });
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe('UNAVAILABLE');
+    expect(res.body.error.message).toMatch(/DATABASE_URL/);
+  });
+
+  it('still lets matching and /api/me work', async () => {
+    expect((await request(app).get('/api/courses/1/candidates').set(as(101n))).status).toBe(200);
+    expect((await request(app).get('/api/me').set(as(101n))).status).toBe(200);
+  });
+});

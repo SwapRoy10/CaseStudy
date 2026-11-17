@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword, verifyPassword } from './auth/password';
+import { REVIEW_CRITERIA } from './reviews/criteria';
 import { DEMO_PASSWORD, courses, enrollments, pastGroups, profiles, reviews, students } from './sampleData';
 
 // the seed saves rows under fixed ids, so on a database that has other people's
@@ -104,11 +105,11 @@ export async function seedSampleData(prisma: PrismaClient) {
           revieweeId: BigInt(r.revieweeId),
           groupId: BigInt(r.groupId),
           ratings: {
-            create: [
-              { criteriaName: 'Communication', rating: r.communication },
-              { criteriaName: 'Reliability', rating: r.reliability },
-              { criteriaName: 'Contribution', rating: r.contribution },
-            ],
+            // sampleData has the three ratings in the same order as the criteria
+            create: [r.communication, r.reliability, r.contribution].map((rating, i) => ({
+              criteriaName: REVIEW_CRITERIA[i],
+              rating,
+            })),
           },
         },
       });

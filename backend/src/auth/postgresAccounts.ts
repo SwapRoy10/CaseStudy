@@ -19,6 +19,10 @@ export async function setPasswordHash(studentId: string, passwordHash: string): 
   await prisma.student.update({ where: { id: BigInt(studentId) }, data: { passwordHash } });
 }
 
+export async function markTutorialComplete(studentId: string): Promise<void> {
+  await prisma.student.update({ where: { id: BigInt(studentId) }, data: { tutorialCompleted: true } });
+}
+
 function toAccount(row: { id: bigint; name: string; passwordHash: string; tutorialCompleted: boolean }): Account {
   return {
     id: row.id.toString(),

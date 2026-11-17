@@ -3,10 +3,14 @@ import { getHealth } from '../controllers/health.controller';
 import { getCandidates } from '../controllers/candidates.controller';
 import { getDemoRoster } from '../controllers/demo.controller';
 import { demoSignIn, demoSignInBody } from '../controllers/demoSession.controller';
-import { changePassword, getCurrentStudent, passwordBody } from '../controllers/me.controller';
+import { changePassword, completeTutorial, getCurrentStudent, passwordBody } from '../controllers/me.controller';
+import { getProfile, putProfile } from '../controllers/profile.controller';
+import * as requestsController from '../controllers/requests.controller';
+import { groupParams, postReview } from '../controllers/reviews.controller';
 import { importRosterFile, rosterQuery } from '../controllers/roster.controller';
 import { signIn, signInBody, signOut } from '../controllers/session.controller';
 import { config } from '../config';
+import { requireDatabase } from '../middleware/database';
 import { requireOperator } from '../middleware/operator';
 import { requireClientHeader, requireStudent } from '../middleware/session';
 import { courseParams, validate } from '../middleware/validate';
@@ -51,10 +55,42 @@ apiRouter.use(requireStudent);
 
 apiRouter.get('/me', getCurrentStudent);
 apiRouter.put('/me/password', validate({ body: passwordBody }), changePassword);
+apiRouter.post('/me/tutorial-complete', completeTutorial);
+
+// profile (sdd 6.3.2, 6.3.3)
+apiRouter.get('/courses/:courseId/profile', requireDatabase, validate({ params: courseParams }), getProfile);
+apiRouter.put('/courses/:courseId/profile', requireDatabase, validate({ params: courseParams }), putProfile);
 
 // matching
 apiRouter.get('/courses/:courseId/candidates', validate({ params: courseParams }), getCandidates);
 
-// TODO profile routes (see sdd api section), e.g.
-// apiRouter.get('/courses/:courseId/profile', validate({ params: courseParams }), getProfile);
-// apiRouter.put('/courses/:courseId/profile', validate({ params: courseParams, body: profileBody }), saveProfile);
+// match requests and groups (sdd 6.3.5 to 6.3.10)
+apiRouter.post(
+  '/courses/:courseId/requests',
+  requireDatabase,
+  validate({ params: courseParams, body: requestsController.sendBody }),
+  requestsController.sendRequest
+);
+apiRouter.get('/courses/:courseId/requests', requireDatabase, validate({ params: courseParams }), requestsController.listRequests);
+apiRouter.post(
+  '/requests/:requestId/response',
+  requireDatabase,
+  validate({ params: requestsController.requestParams, body: requestsController.respondBody }),
+  requestsController.respond
+);
+apiRouter.post(
+  '/requests/:requestId/cancel',
+  requireDatabase,
+  validate({ params: requestsController.requestParams }),
+  requestsController.cancel
+);
+apiRouter.get('/courses/:courseId/group', requireDatabase, validate({ params: courseParams }), requestsController.getGroup);
+apiRouter.get(
+  '/courses/:courseId/members/:studentId',
+  requireDatabase,
+  validate({ params: requestsController.memberParams }),
+  requestsController.getMember
+);
+
+// peer reviews (sdd 6.3.11)
+apiRouter.post('/groups/:groupId/reviews', requireDatabase, validate({ params: groupParams }), postReview);

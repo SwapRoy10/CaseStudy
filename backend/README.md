@@ -24,6 +24,18 @@ Every sample student has the password `casestudy123`, for example `axr101@case.e
 
 The operator imports a roster by posting a Canvas gradebook export (or the SDD csv) to `POST /api/operator/courses/:courseId/roster` with the `X-Operator-Key` header. Set `OPERATOR_KEY` in `backend/.env` first, without it the route is off. There is a sample export in [`database/sample-canvas-roster.csv`](../database/sample-canvas-roster.csv). The details and the curl command are in [`docs/api/README.md`](../docs/api/README.md).
 
+## Requests, groups and reviews
+
+The point of the app is forming groups, so after matching there are three more pieces, all in the same style:
+
+| Where | What it does |
+|---|---|
+| [`src/requests/requests.service.ts`](src/requests/requests.service.ts) | Send, list, answer and cancel match requests. Accepting makes a group or adds the student to one, and refuses to merge two groups |
+| [`src/requests/groups.service.ts`](src/requests/groups.service.ts) | The student's group, and a matched student's full profile (only after an accepted request) |
+| [`src/reviews/reviews.service.ts`](src/reviews/reviews.service.ts) | Peer reviews on the criteria in [`criteria.ts`](src/reviews/criteria.ts), and the updated average |
+
+Every change locks the students' enrollment rows lower id first ([`src/enrollment/lock.ts`](src/enrollment/lock.ts)), as the SDD 5.3 says, so two answers at the same time can't tangle. These write to the database, so without a `DATABASE_URL` the routes answer 503. The tests for them make their own small class ([`src/requests/testUtils.ts`](src/requests/testUtils.ts)) and include requests answered at the same moment.
+
 ## How a request flows
 
 ```
@@ -137,7 +149,7 @@ Matching reads profiles, the roster and review averages from Postgres through [`
 | Database | ~~Real queries for profiles and enrollment~~ **Done**: `getCourseProfiles` and `isEnrolled` read the Prisma tables, with blocks in the same query | [`src/matching/data.ts`](src/matching/data.ts) |
 | Peer review | ~~A real average~~ **Done for now**: `getAverages` computes it straight from `rating_criterion`. Swap it for the review module's own function if they add one | [`src/matching/data.ts`](src/matching/data.ts) |
 | API layer | ~~A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors~~ **Done**: `GET /api/courses/:courseId/candidates` | [`src/controllers/candidates.controller.ts`](src/controllers/candidates.controller.ts) |
-| Match requests | A check before saving a request that the recipient is still eligible | Calls `isEligible` in `src/matching/pipeline.ts` |
-| Profiles | ~~Cleaning up blocks the same way when a profile is saved~~ **Done**: `normalizeBlocks` in `src/profile/profile.schema.ts` splits midnight blocks and then merges with the matching rule. Profile routes still need wiring in `src/routes/index.ts` | `src/profile/profile.schema.ts` |
+| Match requests | ~~A check before saving a request that the recipient is still eligible~~ **Done**: `sendRequest` calls `isEligible` inside its transaction, and accepting makes or grows the group. See [`src/requests/`](src/requests/) and [`src/reviews/`](src/reviews/) | `src/matching/pipeline.ts` |
+| Profiles | ~~Cleaning up blocks the same way when a profile is saved~~ **Done**: `normalizeBlocks` in `src/profile/profile.schema.ts` splits midnight blocks and then merges with the matching rule. The profile routes are wired up now, see `src/controllers/profile.controller.ts` | `src/profile/profile.schema.ts` |
 
 `findCandidates` still checks the data it gets back, so if a real query returns rows in the wrong shape, `findCandidates` throws an error instead of quietly giving wrong matches.

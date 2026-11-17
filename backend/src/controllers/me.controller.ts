@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { findAccountById, getMe, setPasswordHash } from '../auth/accounts';
+import { findAccountById, getMe, markTutorialComplete, setPasswordHash } from '../auth/accounts';
 import { hashPassword, verifyPassword } from '../auth/password';
 import { ApiError } from '../middleware/errorHandler';
 
@@ -36,5 +36,12 @@ export async function changePassword(_req: Request, res: Response) {
   }
 
   await setPasswordHash(account.id, await hashPassword(newPassword));
+  res.status(204).end();
+}
+
+// POST /api/me/tutorial-complete
+// so the first time tutorial doesn't open again (UD-2)
+export async function completeTutorial(_req: Request, res: Response) {
+  await markTutorialComplete(res.locals.studentId);
   res.status(204).end();
 }
