@@ -8,7 +8,7 @@ You need Docker Desktop running.
 
 ```sh
 cp backend/.env.example backend/.env    # then set DATABASE_URL, see below
-npm run db:up       # starts postgres in docker and applies the migrations
+npm run db:up       # starts postgres in docker and applies the migrations (npm run db:migrate on its own does just that part)
 npm run db:seed     # loads the sample students and courses
 npm run dev         # backend now reads from postgres instead of the mock list
 npm run db:down     # stops postgres (your data is kept)
