@@ -48,6 +48,9 @@ function h(weekday: number, start: number, end: number): AvailabilityBlock {
   return { weekday, startMinute: Math.round(start * 60), endMinute: Math.round(end * 60) };
 }
 
+// every sample student signs in with this. it's fake data, never use it for real accounts.
+export const DEMO_PASSWORD = 'casestudy123';
+
 export const SAMPLE_COURSE = '1';
 export const SECOND_SAMPLE_COURSE = '2';
 export const CSDS_393 = '3';

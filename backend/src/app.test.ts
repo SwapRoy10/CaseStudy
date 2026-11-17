@@ -4,6 +4,7 @@ import express from 'express';
 import { createApp } from './app';
 import { errorHandler } from './middleware/errorHandler';
 import { StateConflictError as ModuleConflictError, ValidationError } from './errors';
+import { COOKIE_NAME, createToken } from './auth/sessionToken';
 
 // lets one test simulate a failed db read without touching the mock data.
 const dbDown = vi.hoisted(() => ({ on: false }));
@@ -19,7 +20,8 @@ vi.mock('./matching/data', async () => {
 });
 
 const app = createApp();
-const asStudent = (id: string) => ({ 'X-Student-Id': id });
+// signed in the way a browser would be, with the session cookie
+const asStudent = (id: string) => ({ Cookie: `${COOKIE_NAME}=${createToken(id)}` });
 
 afterEach(() => {
   dbDown.on = false;

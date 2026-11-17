@@ -19,7 +19,7 @@ export const logger = pino({
       : undefined,
   // never write credentials to logs
   redact: {
-    paths: ['req.headers.authorization', 'req.headers.cookie', '*.password', '*.token'],
+    paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-operator-key"]', '*.password', '*.token'],
     censor: '[REDACTED]',
   },
 });

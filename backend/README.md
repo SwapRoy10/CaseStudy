@@ -16,10 +16,19 @@ npm run build && npm start
 
 Config: copy `.env.example` to `.env` (optional; defaults work for local dev). Every setting is validated with Zod in `src/config.ts`. A bad value stops the server at startup with a message naming the variable.
 
+## Signing in and importing a roster
+
+Students sign in with `POST /api/session`, which sets a signed cookie (8 hours, HttpOnly). Passwords are hashed with Argon2id. The code is in [`src/auth/`](src/auth/), [`src/middleware/session.ts`](src/middleware/session.ts) and [`src/controllers/session.controller.ts`](src/controllers/session.controller.ts).
+
+Every sample student has the password `casestudy123`, for example `axr101@case.edu`. This works with the database and without it.
+
+The operator imports a roster by posting a Canvas gradebook export (or the SDD csv) to `POST /api/operator/courses/:courseId/roster` with the `X-Operator-Key` header. Set `OPERATOR_KEY` in `backend/.env` first, without it the route is off. There is a sample export in [`database/sample-canvas-roster.csv`](../database/sample-canvas-roster.csv). The details and the curl command are in [`docs/api/README.md`](../docs/api/README.md).
+
 ## How a request flows
 
 ```
 requestLogger → helmet → cors → json → rate limit → routes/index.ts
+                                          (sign in limiter, operator key and client header checks happen in the routes)
                                                          ↓
                                      validate(...) → controller → module (matching/, profile/, ...)
                                                                      ↓ throws

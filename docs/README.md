@@ -15,7 +15,7 @@ This page explains the matching code in [`backend/src/matching/`](../backend/src
 | HTTP route for matching | Working: `GET /api/courses/:courseId/candidates` ([`candidates.controller.ts`](../backend/src/controllers/candidates.controller.ts)), tested in [`app.test.ts`](../backend/src/app.test.ts) |
 | `isEligible` check for match requests | Written and tested, but nothing calls it yet |
 
-You can run matching through the unit tests, or over HTTP with `npm run dev` from the repo root. The route is `GET /api/courses/{courseId}/candidates`, with `courseId` from the URL and `studentId` from the session (for now a demo `X-Student-Id` header, see [`docs/api/README.md`](api/README.md)). It reads from Postgres. The parts matching is waiting on from the rest of the team are listed in [`backend/README.md`](../backend/README.md#waiting-on-other-parts).
+You can run matching through the unit tests, or over HTTP with `npm run dev` from the repo root. The route is `GET /api/courses/{courseId}/candidates`, with `courseId` from the URL and `studentId` from the signed in session cookie (see [`docs/api/README.md`](api/README.md)). It reads from Postgres. The parts matching is waiting on from the rest of the team are listed in [`backend/README.md`](../backend/README.md#waiting-on-other-parts).
 
 ## Files
 

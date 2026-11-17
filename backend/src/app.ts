@@ -5,7 +5,7 @@ import { config } from './config';
 import { apiRouter } from './routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { requestLogger } from './middleware/logger';
-import { createApiRateLimiter } from './middleware/security';
+import { createApiRateLimiter, createSignInRateLimiter } from './middleware/security';
 
 // builds the app without starting a server, so tests can call it directly.
 // middleware order follows the template: logging first so every request is
@@ -18,6 +18,9 @@ export function createApp() {
   app.use(helmet()); // standard security headers (no sniffing, no framing, etc.)
   app.use(cors({ origin: config.corsOrigins })); // only our own frontend, not any site
   app.use(express.json({ limit: '100kb' })); // profiles are small, so cap bodies so a huge one can't tie up the server
+
+  // signing in gets its own tighter limit, checked before the general one below
+  app.post('/api/session', createSignInRateLimiter());
 
   // rate limit only the api. unknown paths fall through to notFound below.
   app.use('/api', createApiRateLimiter(), apiRouter);
