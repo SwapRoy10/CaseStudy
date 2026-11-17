@@ -36,6 +36,9 @@ export const envSchema = z.object({
   // the key the team operator sends to import a roster. left unset, roster
   // import is switched off.
   OPERATOR_KEY: z.string().min(16, 'must be at least 16 characters').optional(),
+  // the demo roster and the sign in without a password. on everywhere except
+  // production, set false to turn them off on any other server. can't be on in production.
+  DEMO_ROUTES: z.enum(['true', 'false']).optional(),
   // canvas rosters only list a login id (the case id), so this turns it into
   // the school email we store. a login id that already has an @ is used as is.
   SCHOOL_EMAIL_DOMAIN: z.string().min(1).default('case.edu'),
@@ -53,6 +56,9 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
   // a guessable secret would let anyone make their own session cookie
   if (result.data.NODE_ENV === 'production' && !result.data.SESSION_SECRET) {
     throw new Error('Invalid backend environment (check backend/.env):\n  SESSION_SECRET: required in production');
+  }
+  if (result.data.NODE_ENV === 'production' && result.data.DEMO_ROUTES === 'true') {
+    throw new Error('Invalid backend environment (check backend/.env):\n  DEMO_ROUTES: can not be true in production');
   }
   return result.data;
 }
@@ -77,6 +83,7 @@ export const config = {
   // and tests run on any laptop without postgres
   useMockData: env.USE_MOCK_DATA ? env.USE_MOCK_DATA === 'true' : !env.DATABASE_URL,
   sessionSecret: env.SESSION_SECRET ?? 'dev-only-session-secret-do-not-use-in-production',
+  demoRoutes: env.DEMO_ROUTES ? env.DEMO_ROUTES === 'true' : env.NODE_ENV !== 'production',
   operatorKey: env.OPERATOR_KEY,
   schoolEmailDomain: env.SCHOOL_EMAIL_DOMAIN.toLowerCase(),
 };

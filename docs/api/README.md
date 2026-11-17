@@ -77,9 +77,9 @@ Signed in, and needs the `X-Requested-With` header. Body is `{ "currentPassword"
 
 ### `GET /api/demo/roster` and `POST /api/demo/session`
 
-Demo only, and both are switched off when `NODE_ENV` is `production`. The roster lists each course that has profiles with the students on it (names and ids, never emails), and it needs no sign in. It reads from whichever database `DATABASE_URL` points at, so with Supabase set up the demo class list comes from Supabase. The sign in page uses it as a picker.
+Demo only. Both are on by default and switched off when `NODE_ENV` is `production`, or anywhere with `DEMO_ROUTES=false` in `backend/.env` (`DEMO_ROUTES=true` is refused in production). The server logs a warning at startup when they are on with a real database. The roster lists each course that has profiles with the students on it (names and ids, never emails), and it needs no sign in. It reads from whichever database `DATABASE_URL` points at, so with Supabase set up the demo class list comes from Supabase. The sign in page uses it as a picker.
 
-`POST /api/demo/session` takes `{ "studentId": "101" }` and signs you in as that student with no password, setting the same cookie as a normal sign in. It needs the `X-Requested-With` header like any other change, and answers `404` for a student that doesn't exist. Because it skips the password it must never be reachable on a real deployment, so run that one with `NODE_ENV=production`.
+`POST /api/demo/session` takes `{ "studentId": "101" }` and signs you in as that student with no password, setting the same cookie as a normal sign in. It needs the `X-Requested-With` header like any other change, and answers `404` for a student that doesn't exist. Because it skips the password it must never be reachable on a real deployment, so turn it off there.
 
 ### `POST /api/operator/courses/:courseId/roster`
 

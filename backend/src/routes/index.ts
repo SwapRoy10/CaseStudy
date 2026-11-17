@@ -19,7 +19,7 @@ export const apiRouter = Router();
 apiRouter.get('/health', getHealth);
 
 // demo only, lets the frontend pick a student until everyone has their own login
-if (config.env !== 'production') {
+if (config.demoRoutes) {
   apiRouter.get('/demo/roster', getDemoRoster);
 }
 
@@ -42,7 +42,7 @@ apiRouter.post('/session', validate({ body: signInBody }), signIn);
 apiRouter.delete('/session', signOut);
 
 // demo only, signs you in as the student picked from the roster above
-if (config.env !== 'production') {
+if (config.demoRoutes) {
   apiRouter.post('/demo/session', validate({ body: demoSignInBody }), demoSignIn);
 }
 

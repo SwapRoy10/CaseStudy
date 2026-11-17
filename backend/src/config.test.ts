@@ -37,4 +37,19 @@ describe('parseEnv', () => {
     const secret = 'x'.repeat(32);
     expect(parseEnv({ NODE_ENV: 'production', SESSION_SECRET: secret }).SESSION_SECRET).toBe(secret);
   });
+
+  it('has the demo routes on outside production and off in it', () => {
+    expect(parseEnv({}).DEMO_ROUTES).toBeUndefined();
+    expect(parseEnv({ NODE_ENV: 'production', SESSION_SECRET: 'x'.repeat(32) }).DEMO_ROUTES).toBeUndefined();
+  });
+
+  it('only accepts true or false for DEMO_ROUTES', () => {
+    expect(() => parseEnv({ DEMO_ROUTES: 'yes' })).toThrow(/DEMO_ROUTES/);
+  });
+
+  it('will not start in production with the demo routes on', () => {
+    const env = { NODE_ENV: 'production', SESSION_SECRET: 'x'.repeat(32) };
+    expect(() => parseEnv({ ...env, DEMO_ROUTES: 'true' })).toThrow(/DEMO_ROUTES: can not be true in production/);
+    expect(parseEnv({ ...env, DEMO_ROUTES: 'false' }).DEMO_ROUTES).toBe('false');
+  });
 });
