@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import { getHealth } from '../controllers/health.controller';
 import { getCandidates } from '../controllers/candidates.controller';
+import { getCourses } from '../controllers/courses.controller';
 import { getDemoRoster } from '../controllers/demo.controller';
 import { demoSignIn, demoSignInBody } from '../controllers/demoSession.controller';
 import { changePassword, completeTutorial, getCurrentStudent, passwordBody } from '../controllers/me.controller';
@@ -54,6 +55,7 @@ if (config.demoRoutes) {
 apiRouter.use(requireStudent);
 
 apiRouter.get('/me', getCurrentStudent);
+apiRouter.get('/courses', getCourses);
 apiRouter.put('/me/password', validate({ body: passwordBody }), changePassword);
 apiRouter.post('/me/tutorial-complete', completeTutorial);
 

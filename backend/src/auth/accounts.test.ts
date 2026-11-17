@@ -55,5 +55,11 @@ describe.each(sources)('accounts from $name', ({ source, skip }) => {
     it('gives null for a student that does not exist', async () => {
       expect(await source.getMe('999999')).toBeNull();
     });
+
+    it('leaves out past semesters', async () => {
+      // 1001 is on csds 393 (Fall 2026) and was in csds 132 and 233 last spring
+      const me = await source.getMe('1001');
+      expect(me?.courses.map((c) => c.code)).toEqual(['CSDS 393']);
+    });
   });
 });

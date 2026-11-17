@@ -58,7 +58,7 @@ Needs the `X-Requested-With` header. Clears the cookie and returns `204`.
 
 ### `GET /api/me`
 
-Signed in. Who the session belongs to and the courses they are on the roster of. The frontend calls it on load to see if someone is already signed in. It never sends the password hash.
+Signed in. Who the session belongs to and the courses they are on the roster of, for the current term only (the newest term any course is in, "Fall 2026" right now). Past semesters stay in the database for their groups and reviews but aren't listed. The frontend calls it on load to see if someone is already signed in. It never sends the password hash.
 
 ```json
 {
@@ -69,6 +69,14 @@ Signed in. Who the session belongs to and the courses they are on the roster of.
     { "id": "1", "code": "SAMPLE 101", "title": "Sample Course (testing doc data)", "section": "001", "term": "Fall 2026", "hasProfile": true }
   ]
 }
+```
+
+### `GET /api/courses`
+
+Signed in. This term's courses for a class selector (SDD 6.3.1), all of them and not just the ones the student is on the roster of, since saving a profile does that check. `/api/me` has the student's own courses.
+
+```json
+{ "courses": [{ "courseId": "3", "code": "CSDS 393", "title": "Software Engineering", "section": "100", "term": "Fall 2026" }] }
 ```
 
 ### `PUT /api/me/password`
