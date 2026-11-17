@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { api, ApiRequestError, setSignedOutHandler } from './services/api';
 import type { Id, Me, MyCourse } from './types/api';
 import { ConnectionStatus } from './components/ConnectionStatus';
+import { TutorialDialog } from './components/TutorialDialog';
+import { AccountPage } from './pages/AccountPage';
 import { CandidatesPage } from './pages/CandidatesPage';
+import { GroupPage } from './pages/GroupPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { RequestsPage } from './pages/RequestsPage';
 import { SignInPage } from './pages/SignInPage';
 
 export default function App() {
@@ -12,7 +16,7 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [startError, setStartError] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<Id>('');
-  const [page, setPage] = useState<'matches' | 'profile'>('matches');
+  const [page, setPage] = useState<'matches' | 'requests' | 'group' | 'profile' | 'account'>('matches');
 
   // a 401 from any call means the session ended, so go back to the sign in screen
   useEffect(() => {
@@ -103,8 +107,17 @@ export default function App() {
             <button className={page === 'matches' ? 'tab active' : 'tab'} onClick={() => setPage('matches')}>
               Matches
             </button>
+            <button className={page === 'requests' ? 'tab active' : 'tab'} onClick={() => setPage('requests')}>
+              Requests
+            </button>
+            <button className={page === 'group' ? 'tab active' : 'tab'} onClick={() => setPage('group')}>
+              Group
+            </button>
             <button className={page === 'profile' ? 'tab active' : 'tab'} onClick={() => setPage('profile')}>
               My profile
+            </button>
+            <button className={page === 'account' ? 'tab active' : 'tab'} onClick={() => setPage('account')}>
+              Account
             </button>
           </nav>
 
@@ -115,8 +128,13 @@ export default function App() {
             {course && page === 'matches' && (
               <CandidatesPage studentId={me.studentId} courseId={courseId} studentName={me.name} />
             )}
-            {course && page === 'profile' && <ProfilePage />}
+            {course && page === 'requests' && <RequestsPage studentId={me.studentId} courseId={courseId} />}
+            {course && page === 'group' && <GroupPage studentId={me.studentId} courseId={courseId} />}
+            {course && page === 'profile' && <ProfilePage courseId={courseId} />}
+            {page === 'account' && <AccountPage me={me} />}
           </main>
+
+          {!me.tutorialCompleted && <TutorialDialog onDone={() => setMe({ ...me, tutorialCompleted: true })} />}
         </>
       )}
     </div>

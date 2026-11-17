@@ -1,13 +1,19 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { StateConflictError } from '../matching/errors';
 // profile and enrollment throw their own error classes from src/errors.ts
-import { StateConflictError as ModuleConflictError, ValidationError } from '../errors';
+import { ForbiddenError, StateConflictError as ModuleConflictError, ValidationError } from '../errors';
 
 // those classes only carry a code, so these are the messages the student sees
 const conflictMessages: Record<string, string> = {
   NOT_ENROLLED: 'Your enrollment in this class could not be verified.',
   STUDENT_NOT_FOUND: 'We could not find your account.',
   COURSE_NOT_FOUND: 'That course does not exist.',
+  NO_PROFILE: 'Complete your profile to see matches.',
+  NO_LONGER_ELIGIBLE: 'This classmate is no longer a match.',
+  DUPLICATE_REQUEST: 'You already sent this classmate a request.',
+  NOT_PENDING: 'This request has already been answered.',
+  GROUP_MERGE: 'Group merging is not available in this release.',
+  DUPLICATE_REVIEW: 'You have already reviewed this group member.',
 };
 
 // sdd 10.3: modules throw typed errors, this is the one place that turns them
@@ -60,6 +66,10 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof ModuleConflictError) {
     const message = conflictMessages[err.code] ?? 'That is not allowed right now.';
     res.status(409).json({ error: { code: 'CONFLICT', reason: err.code, message } });
+    return;
+  }
+  if (err instanceof ForbiddenError) {
+    res.status(403).json({ error: { code: 'FORBIDDEN', message: err.message } });
     return;
   }
   if (err instanceof ValidationError) {

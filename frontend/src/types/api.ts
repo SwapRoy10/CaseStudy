@@ -26,7 +26,7 @@ export interface CandidatesResponse {
 
 // every backend error has this body (backend/src/middleware/errorHandler.ts)
 export interface ApiErrorBody {
-  error: { code: string; message: string; reason?: string };
+  error: { code: string; message: string; reason?: string; fields?: string[] };
 }
 
 // from GET /api/me (backend/src/auth/types.ts)
@@ -44,6 +44,62 @@ export interface Me {
   name: string;
   tutorialCompleted: boolean;
   courses: MyCourse[];
+}
+
+export type RequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELED';
+
+// from backend/src/requests/types.ts. other is the limited summary of the other
+// student, or null if they don't match any more. no names before a match.
+export interface RequestRecord {
+  requestId: Id;
+  courseId: Id;
+  requesterId: Id;
+  recipientId: Id;
+  status: RequestStatus;
+  requestedAt: string;
+  respondedAt: string | null;
+  other?: CandidateSummary | null;
+}
+
+export interface GroupMember {
+  studentId: Id;
+  name: string;
+  reviewedByMe: boolean;
+}
+
+export interface GroupView {
+  groupId: Id;
+  courseId: Id;
+  formedAt: string;
+  members: GroupMember[];
+  criteria: string[];
+}
+
+// reviewAverage comes as text: 'Not yet rated' or something like '3.2'
+export interface OwnProfile {
+  courseId: Id;
+  name: string;
+  schoolEmail: string;
+  gradeGoal: GradeGoal | null;
+  workStyle: WorkStyle | null;
+  blocks: AvailabilityBlock[];
+  reviewAverage: string;
+}
+
+// a matched student's full profile, only after an accepted request
+export interface MatchedProfile extends OwnProfile {
+  studentId: Id;
+}
+
+export interface ProfileInput {
+  gradeGoal: GradeGoal | '';
+  workStyle: WorkStyle | '';
+  blocks: AvailabilityBlock[];
+}
+
+export interface ReviewRating {
+  criteriaName: string;
+  rating: number;
 }
 
 // demo only, from GET /api/demo/roster (backend/src/controllers/demo.controller.ts).

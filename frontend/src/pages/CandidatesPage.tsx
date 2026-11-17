@@ -1,24 +1,28 @@
 import { useEffect, useState } from 'react';
 import { api, ApiRequestError } from '../services/api';
-import type { CandidateSummary, Id } from '../types/api';
+import type { CandidateSummary, Id, RequestRecord } from '../types/api';
 import { CandidateCard } from '../components/CandidateCard';
 
 type State =
   | { kind: 'loading' }
   | { kind: 'error'; message: string; retryable: boolean }
-  | { kind: 'ready'; candidates: CandidateSummary[] };
+  | { kind: 'ready'; candidates: CandidateSummary[]; requests: RequestRecord[] };
 
 export function CandidatesPage({ studentId, courseId, studentName }: { studentId: Id; courseId: Id; studentName: string }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  // the card whose request is being sent or canceled, and any problem with that
+  const [busyId, setBusyId] = useState<Id | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setState({ kind: 'loading' });
 
-    api
-      .getCandidates(courseId)
-      .then((res) => !cancelled && setState({ kind: 'ready', candidates: res.candidates }))
+    // the requests are only used to show which cards already have one. if they
+    // can't load (no database in the mock demo) the list still shows.
+    Promise.all([api.getCandidates(courseId), api.getRequests(courseId).catch(() => ({ requests: [] }))])
+      .then(([res, reqs]) => !cancelled && setState({ kind: 'ready', candidates: res.candidates, requests: reqs.requests }))
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof ApiRequestError) {
@@ -35,6 +39,44 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
       cancelled = true;
     };
   }, [studentId, courseId, attempt]);
+
+  // the newest request between you and a candidate comes first in the list
+  function latestRequest(requests: RequestRecord[], candidateId: Id) {
+    return requests.find((r) => r.requesterId === candidateId || r.recipientId === candidateId);
+  }
+
+  // swaps one request in the list so the card changes without reloading everything
+  function updateRequest(updated: RequestRecord) {
+    setState((current) => {
+      if (current.kind !== 'ready') return current;
+      const others = current.requests.filter((r) => r.requestId !== updated.requestId);
+      return { ...current, requests: [updated, ...others] };
+    });
+  }
+
+  async function handleSend(candidateId: Id) {
+    setBusyId(candidateId);
+    setActionError(null);
+    try {
+      updateRequest(await api.sendRequest(courseId, candidateId));
+    } catch (err) {
+      setActionError(err instanceof ApiRequestError ? err.message : 'Something went wrong.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleCancel(candidateId: Id, requestId: Id) {
+    setBusyId(candidateId);
+    setActionError(null);
+    try {
+      updateRequest(await api.cancelRequest(requestId));
+    } catch (err) {
+      setActionError(err instanceof ApiRequestError ? err.message : 'Something went wrong.');
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <section>
@@ -64,10 +106,25 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
         </p>
       )}
 
+      {actionError && (
+        <p className="form-error" role="alert">
+          {actionError}
+        </p>
+      )}
+
       {state.kind === 'ready' && state.candidates.length > 0 && (
         <ol className="cards">
           {state.candidates.map((c, i) => (
-            <CandidateCard key={c.candidateId} candidate={c} rank={i + 1} />
+            <CandidateCard
+              key={c.candidateId}
+              candidate={c}
+              rank={i + 1}
+              studentId={studentId}
+              request={latestRequest(state.requests, c.candidateId)}
+              busy={busyId === c.candidateId}
+              onSend={() => handleSend(c.candidateId)}
+              onCancel={(requestId) => handleCancel(c.candidateId, requestId)}
+            />
           ))}
         </ol>
       )}
