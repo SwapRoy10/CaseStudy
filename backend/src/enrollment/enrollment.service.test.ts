@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../db';
+import { verifyPassword } from '../auth/password';
 import { importRoster, importRosterWithReasons } from './enrollment.service';
 
 try { process.loadEnvFile('.env'); } catch {}
@@ -84,23 +85,70 @@ describe.skipIf(!process.env.DATABASE_URL)('importRoster', () => {
         `"Student, Y",3,4,${tag}y,S,`,
         '"Student, Test",5,,,S,',
       ].join('\n');
-      expect(await importRosterWithReasons(canvasCourse, csv)).toEqual({ ok: true, added: 2, total: 2 });
+      expect(await importRosterWithReasons(canvasCourse, csv)).toEqual({ ok: true, added: 2, total: 2, accounts: [] });
       expect(await enrolled()).toBe(2);
     });
 
     it('finds an account even when the email is saved in capitals', async () => {
       const csv = [canvasHeader, `"Student, Z",1,2,${tag}z,S,`].join('\n');
-      expect(await importRosterWithReasons(canvasCourse, csv)).toEqual({ ok: true, added: 1, total: 1 });
+      expect(await importRosterWithReasons(canvasCourse, csv)).toEqual({ ok: true, added: 1, total: 1, accounts: [] });
     });
 
     it('counts a student already on the roster as enrolled but not added', async () => {
       const csv = [canvasHeader, `"Student, X",1,2,${tag}x,S,`].join('\n');
-      expect(await importRosterWithReasons(canvasCourse, csv)).toEqual({ ok: true, added: 0, total: 1 });
+      expect(await importRosterWithReasons(canvasCourse, csv)).toEqual({ ok: true, added: 0, total: 1, accounts: [] });
     });
 
     it('gives just the bad row numbers through the original importRoster', async () => {
       const csv = [canvasHeader, `"Student, X",1,2,${tag}x,S,`, '"Student, C",5,6,ghost,S,'].join('\n');
       expect(await importRoster(canvasCourse, csv)).toEqual({ ok: false, badRows: [3] });
+    });
+
+    describe('with createAccounts', () => {
+      const made = `${tag}n`;
+      afterAll(async () => {
+        await prisma.enrollment.deleteMany({ where: { student: { schoolEmail: { startsWith: made } } } });
+        await prisma.student.deleteMany({ where: { schoolEmail: { startsWith: made } } });
+      });
+
+      it('still fails the row without the option', async () => {
+        const csv = [canvasHeader, `"New, Nina",1,2,${made}1,S,`].join('\n');
+        expect(await importRosterWithReasons(canvasCourse, csv)).toMatchObject({ ok: false });
+      });
+
+      it('makes the account, enrolls it, and gives back a first password that works', async () => {
+        const csv = [canvasHeader, `"New, Nina",1,2,${made}1,S,`, `"Old, Olga",3,4,${tag}x,S,`].join('\n');
+        const result = await importRosterWithReasons(canvasCourse, csv, { createAccounts: true });
+        expect(result).toMatchObject({ ok: true, total: 2 });
+        if (!result.ok) return;
+
+        // only the student who had no account gets one
+        expect(result.accounts).toHaveLength(1);
+        const [account] = result.accounts;
+        expect(account).toMatchObject({ email: `${made}1@case.edu`, name: 'Nina New' });
+
+        // the password is saved hashed, not as given, and it matches
+        const row = await prisma.student.findUniqueOrThrow({ where: { schoolEmail: account.email } });
+        expect(row.passwordHash).not.toContain(account.password);
+        expect(await verifyPassword(row.passwordHash, account.password)).toBe(true);
+        expect(await prisma.enrollment.count({ where: { courseId: canvasCourse, studentId: row.id } })).toBe(1);
+      });
+
+      it('gives every new student a different password', async () => {
+        const csv = [canvasHeader, `"A, Ann",1,2,${made}2,S,`, `"B, Bo",3,4,${made}3,S,`].join('\n');
+        const result = await importRosterWithReasons(canvasCourse, csv, { createAccounts: true });
+        if (!result.ok) throw new Error('import failed');
+        expect(new Set(result.accounts.map((a) => a.password)).size).toBe(2);
+      });
+
+      it('makes nothing if some other row is bad', async () => {
+        const csv = [canvasHeader, `"C, Cy",1,2,${made}4,S,`, '"D, Di",3,4,,S,'].join('\n');
+        expect(await importRosterWithReasons(canvasCourse, csv, { createAccounts: true })).toEqual({
+          ok: false,
+          rows: [{ row: 3, reason: 'no login id' }],
+        });
+        expect(await prisma.student.count({ where: { schoolEmail: `${made}4@case.edu` } })).toBe(0);
+      });
     });
 
     it('rejects a file with no login column', async () => {

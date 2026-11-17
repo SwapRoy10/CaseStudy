@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashPassword, verifyPassword } from './password';
+import { generatePassword, hashPassword, verifyPassword } from './password';
 
 describe('passwords', () => {
   it('checks a password against its hash', async () => {
@@ -20,5 +20,21 @@ describe('passwords', () => {
 
   it('treats a placeholder hash as a wrong password instead of crashing', async () => {
     expect(await verifyPassword('seed-placeholder-not-a-real-hash', 'anything')).toBe(false);
+  });
+});
+
+describe('generatePassword', () => {
+  it('makes a password of the length asked for, 10 by default', () => {
+    expect(generatePassword()).toHaveLength(10);
+    expect(generatePassword(16)).toHaveLength(16);
+  });
+
+  it('leaves out the letters that look alike', () => {
+    for (let i = 0; i < 50; i++) expect(generatePassword(40)).not.toMatch(/[0OlI1]/);
+  });
+
+  it('is different every time', () => {
+    const made = new Set(Array.from({ length: 50 }, () => generatePassword()));
+    expect(made.size).toBe(50);
   });
 });

@@ -7,7 +7,19 @@ import { Account, Me } from './types';
 export async function findAccountByEmail(email: string): Promise<Account | null> {
   // emails are saved however the roster spelled them, so compare without case
   const row = await prisma.student.findFirst({ where: { schoolEmail: { equals: email, mode: 'insensitive' } } });
-  if (!row) return null;
+  return row && toAccount(row);
+}
+
+export async function findAccountById(studentId: string): Promise<Account | null> {
+  const row = await prisma.student.findUnique({ where: { id: BigInt(studentId) } });
+  return row && toAccount(row);
+}
+
+export async function setPasswordHash(studentId: string, passwordHash: string): Promise<void> {
+  await prisma.student.update({ where: { id: BigInt(studentId) }, data: { passwordHash } });
+}
+
+function toAccount(row: { id: bigint; name: string; passwordHash: string; tutorialCompleted: boolean }): Account {
   return {
     id: row.id.toString(),
     name: row.name,

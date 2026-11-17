@@ -6,6 +6,8 @@ import { parseCsv } from './csv';
 export interface RosterRow {
   row: number;
   email: string;
+  // from the Student column in a canvas export, used when an account has to be made
+  name?: string;
   // only the sdd format names a course in every row
   course?: { code: string; section: string; term: string };
   // set when the line can't be used, like a student with no login id
@@ -72,7 +74,15 @@ function parseCanvasRows(body: string[][], idColumn: number, nameColumn: number,
       return;
     }
     // a login id that is already an email is used as is
-    rows.push({ row: i + 2, email: id.includes('@') ? id : `${id}@${emailDomain}` });
+    rows.push({ row: i + 2, email: id.includes('@') ? id : `${id}@${emailDomain}`, name: toName(r[nameColumn] ?? '') });
   });
   return rows;
+}
+
+// canvas writes names as "Last, First". no comma means it's already in order
+function toName(cell: string): string | undefined {
+  const text = cell.trim();
+  if (!text) return undefined;
+  const [last, ...first] = text.split(',').map((p) => p.trim());
+  return first.length ? `${first.join(' ')} ${last}` : text;
 }

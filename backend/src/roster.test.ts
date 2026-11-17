@@ -9,7 +9,10 @@ const KEY = vi.hoisted(() => {
 
 // the database part is tested in enrollment.service.test.ts. here importRoster
 // is faked so these tests are only about who can call the route and what comes back
-const imported = vi.hoisted(() => ({ result: { ok: true as boolean, added: 2, total: 3, rows: [] as unknown[] }, calls: [] as unknown[][] }));
+const imported = vi.hoisted(() => ({
+  result: { ok: true as boolean, added: 2, total: 3, rows: [] as unknown[], accounts: [] as unknown[] },
+  calls: [] as unknown[][],
+}));
 vi.mock('./enrollment/enrollment.service', () => ({
   importRosterWithReasons: async (...args: unknown[]) => {
     imported.calls.push(args);
@@ -25,7 +28,7 @@ const URL = '/api/operator/courses/3/roster';
 const FILE = 'Student,SIS Login ID\n"Rivera, Alex",axr101\n';
 
 afterEach(() => {
-  imported.result = { ok: true, added: 2, total: 3, rows: [] };
+  imported.result = { ok: true, added: 2, total: 3, rows: [], accounts: [] };
   imported.calls = [];
 });
 
@@ -33,9 +36,9 @@ describe('POST /api/operator/courses/:courseId/roster', () => {
   it('imports the file with the operator key', async () => {
     const res = await request(app).post(URL).set('X-Operator-Key', KEY).set('Content-Type', 'text/csv').send(FILE);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ enrolled: 3, added: 2 });
+    expect(res.body).toEqual({ enrolled: 3, added: 2, created: 0, accounts: [] });
     // the course comes from the url and the file text is passed on untouched
-    expect(imported.calls).toEqual([['3', FILE]]);
+    expect(imported.calls).toEqual([['3', FILE, { createAccounts: false }]]);
   });
 
   it('turns away a request with no key', async () => {
@@ -85,7 +88,7 @@ describe('POST /api/operator/courses/:courseId/roster', () => {
   });
 
   it('lists the bad rows and says nothing was imported', async () => {
-    imported.result = { ok: false, added: 0, total: 0, rows: [{ row: 4, reason: 'no account for that email' }] };
+    imported.result = { ok: false, added: 0, total: 0, rows: [{ row: 4, reason: 'no account for that email' }], accounts: [] };
     const res = await request(app).post(URL).set('X-Operator-Key', KEY).set('Content-Type', 'text/csv').send(FILE);
     expect(res.status).toBe(400);
     expect(res.body.error).toEqual({
@@ -93,5 +96,30 @@ describe('POST /api/operator/courses/:courseId/roster', () => {
       message: 'Some rows could not be matched, so nothing was imported.',
       rows: [{ row: 4, reason: 'no account for that email' }],
     });
+  });
+
+  it('passes createAccounts on and sends back the first passwords without letting them be cached', async () => {
+    imported.result = {
+      ok: true,
+      added: 1,
+      total: 1,
+      rows: [],
+      accounts: [{ email: 'axr101@case.edu', name: 'Alex Rivera', password: 'abc123XYZ9' }],
+    };
+    const res = await request(app)
+      .post(`${URL}?createAccounts=true`)
+      .set('X-Operator-Key', KEY)
+      .set('Content-Type', 'text/csv')
+      .send(FILE);
+    expect(res.status).toBe(200);
+    expect(imported.calls).toEqual([['3', FILE, { createAccounts: true }]]);
+    expect(res.body.created).toBe(1);
+    expect(res.body.accounts).toEqual([{ email: 'axr101@case.edu', name: 'Alex Rivera', password: 'abc123XYZ9' }]);
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
+
+  it('400s on a createAccounts value that is not true or false', async () => {
+    const res = await request(app).post(`${URL}?createAccounts=yes`).set('X-Operator-Key', KEY).set('Content-Type', 'text/csv').send(FILE);
+    expect(res.status).toBe(400);
   });
 });

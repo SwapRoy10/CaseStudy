@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from './app';
 import { COOKIE_NAME, createToken } from './auth/sessionToken';
+import { hashPassword } from './auth/password';
+import { config } from './config';
+import { prisma } from './db';
 import { DEMO_PASSWORD } from './sampleData';
 
 // sign in, sign out and the session cookie, through the real app
@@ -159,5 +162,76 @@ describe('DELETE /api/session', () => {
   it('turns away a request without the client header', async () => {
     const res = await request(app).delete('/api/session');
     expect(res.status).toBe(403);
+  });
+});
+
+describe('PUT /api/me/password', () => {
+  const app = createApp();
+  const CLIENT_HEADER = { 'X-Requested-With': 'CaseStudy' };
+
+  // this changes a password, so with a database it gets a student of its own (the
+  // seed resets the sample students while other test files run). with no
+  // database the sample students live in memory, so one that no other test uses is fine.
+  let email = 'bxc102@case.edu';
+  let studentId = '102';
+
+  beforeAll(async () => {
+    if (config.useMockData) return;
+    email = `pwtest${Date.now()}@test.edu`;
+    const row = await prisma.student.create({ data: { name: 'Pw Test', schoolEmail: email, passwordHash: await hashPassword(DEMO_PASSWORD) } });
+    studentId = row.id.toString();
+  });
+
+  afterAll(async () => {
+    if (!config.useMockData) await prisma.student.delete({ where: { id: BigInt(studentId) } });
+  });
+
+  const cookie = () => `${COOKIE_NAME}=${createToken(studentId)}`;
+  const change = (body: object) =>
+    request(app).put('/api/me/password').set(CLIENT_HEADER).set('Cookie', cookie()).send(body);
+
+  it('changes the password so the new one signs in and the old one does not', async () => {
+    const res = await change({ currentPassword: DEMO_PASSWORD, newPassword: 'a better password' });
+    expect(res.status).toBe(204);
+
+    expect((await signIn(app, email, 'a better password')).status).toBe(200);
+    expect((await signIn(app, email, DEMO_PASSWORD)).status).toBe(401);
+
+    // and back to the demo password
+    const back = await change({ currentPassword: 'a better password', newPassword: DEMO_PASSWORD });
+    expect(back.status).toBe(204);
+  });
+
+  it('400s when the current password is wrong and changes nothing', async () => {
+    const res = await change({ currentPassword: 'not it', newPassword: 'a better password' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION');
+    expect((await signIn(app, email, DEMO_PASSWORD)).status).toBe(200);
+  });
+
+  it('400s on a new password under 8 characters', async () => {
+    const res = await change({ currentPassword: DEMO_PASSWORD, newPassword: 'short' });
+    expect(res.status).toBe(400);
+  });
+
+  it('400s when the new password is the same as the old one', async () => {
+    const res = await change({ currentPassword: DEMO_PASSWORD, newPassword: DEMO_PASSWORD });
+    expect(res.status).toBe(400);
+  });
+
+  it('needs a session and the client header', async () => {
+    const noSession = await request(app).put('/api/me/password').set(CLIENT_HEADER).send({ currentPassword: 'x', newPassword: 'long enough' });
+    expect(noSession.status).toBe(401);
+    const noHeader = await request(app).put('/api/me/password').set('Cookie', cookie()).send({ currentPassword: DEMO_PASSWORD, newPassword: 'long enough' });
+    expect(noHeader.status).toBe(403);
+  });
+
+  it('401s for a valid cookie of a student that does not exist', async () => {
+    const res = await request(app)
+      .put('/api/me/password')
+      .set(CLIENT_HEADER)
+      .set('Cookie', `${COOKIE_NAME}=${createToken('424242')}`)
+      .send({ currentPassword: 'x', newPassword: 'long enough' });
+    expect(res.status).toBe(401);
   });
 });
