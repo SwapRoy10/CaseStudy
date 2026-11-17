@@ -114,7 +114,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
             setSaved(false);
           }}
         >
-          <option value="">Choose one</option>
+          <option value="" disabled>Choose one</option>
           <option value="A_TRACK">Aiming for an A</option>
           <option value="PASS_TRACK">Aiming to pass</option>
         </select>
@@ -131,7 +131,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
             setSaved(false);
           }}
         >
-          <option value="">Choose one</option>
+          <option value="" disabled>Choose one</option>
           <option value="GROUP">Prefers group work</option>
           <option value="SOLO">Prefers solo work</option>
         </select>
