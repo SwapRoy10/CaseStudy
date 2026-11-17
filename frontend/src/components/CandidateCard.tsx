@@ -1,9 +1,8 @@
-import { useState } from 'react';
-import type { AvailabilityBlock, CandidateSummary } from '../types/api';
+import type { AvailabilityBlock, CandidateSummary, RequestRecord } from '../types/api';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const GOAL_LABEL = { A_TRACK: 'Aiming for an A', PASS_TRACK: 'Aiming to pass' };
-const STYLE_LABEL = { SOLO: 'Prefers solo work', GROUP: 'Prefers group work' };
+export const GOAL_LABEL = { A_TRACK: 'Aiming for an A', PASS_TRACK: 'Aiming to pass' };
+export const STYLE_LABEL = { SOLO: 'Prefers solo work', GROUP: 'Prefers group work' };
 
 function time(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -13,14 +12,45 @@ function time(minutes: number) {
   return m === 0 ? `${h12}${suffix}` : `${h12}:${String(m).padStart(2, '0')}${suffix}`;
 }
 
-function interval(b: AvailabilityBlock) {
+export function interval(b: AvailabilityBlock) {
   return `${DAYS[b.weekday]} ${time(b.startMinute)}-${time(b.endMinute)}`;
 }
 
-// limited view only: no name or contact details until a match is accepted.
-export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary; rank: number }) {
-  // not saved anywhere yet, match requests aren't built on the backend
-  const [requested, setRequested] = useState(false);
+// the limited summary, shared by the candidate cards and the request lists.
+// no name or contact details until a match is accepted.
+export function SummaryDetails({ summary }: { summary: CandidateSummary }) {
+  return (
+    <>
+      <p className="tags">
+        <span>{GOAL_LABEL[summary.gradeGoal]}</span>
+        <span>{STYLE_LABEL[summary.workStyle]}</span>
+        <span>
+          {summary.reviewAverage === null ? 'Not yet rated' : `Rated ${summary.reviewAverage.toFixed(1)} out of 5`}
+        </span>
+      </p>
+      <p className="label">Shared free time</p>
+      <ul className="intervals">
+        {summary.sharedIntervals.map((b) => (
+          <li key={`${b.weekday}-${b.startMinute}`}>{interval(b)}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+interface Props {
+  candidate: CandidateSummary;
+  rank: number;
+  studentId: string;
+  // the latest request between you and this candidate, if there is one
+  request?: RequestRecord;
+  busy: boolean;
+  onSend: () => void;
+  onCancel: (requestId: string) => void;
+}
+
+export function CandidateCard({ candidate, rank, studentId, request, busy, onSend, onCancel }: Props) {
+  const sentByMe = request?.requesterId === studentId;
 
   return (
     <li className="card">
@@ -40,15 +70,28 @@ export function CandidateCard({ candidate, rank }: { candidate: CandidateSummary
           <li key={`${b.weekday}-${b.startMinute}`}>{interval(b)}</li>
         ))}
       </ul>
-      {requested ? (
+
+      {request?.status === 'PENDING' && sentByMe && (
         <p className="request-sent">
           Request sent{' '}
-          <button onClick={() => setRequested(false)}>Cancel</button>
+          <button disabled={busy} onClick={() => onCancel(request.requestId)}>
+            Cancel
+          </button>
         </p>
-      ) : (
-        <button className="request-btn" onClick={() => setRequested(true)}>
-          Request to study together
-        </button>
+      )}
+      {request?.status === 'PENDING' && !sentByMe && (
+        <p className="request-note">This classmate sent you a request. You can answer it in the Requests tab.</p>
+      )}
+      {request?.status === 'ACCEPTED' && (
+        <p className="request-sent">Matched. You can find them in the Group tab.</p>
+      )}
+      {(!request || request.status === 'DECLINED' || request.status === 'CANCELED') && (
+        <>
+          {request?.status === 'DECLINED' && <p className="request-note">Your last request was declined.</p>}
+          <button className="request-btn" disabled={busy} onClick={onSend}>
+            Request to study together
+          </button>
+        </>
       )}
     </li>
   );

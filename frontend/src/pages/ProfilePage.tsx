@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { AvailabilityBlock, GradeGoal, WorkStyle } from '../types/api';
+import { useEffect, useState } from 'react';
+import { api, ApiRequestError } from '../services/api';
+import type { AvailabilityBlock, GradeGoal, Id, WorkStyle } from '../types/api';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -18,15 +19,37 @@ function toMinutes(time: string) {
 
 const NEW_BLOCK: AvailabilityBlock = { weekday: 1, startMinute: 600, endMinute: 660 };
 
-
-export function ProfilePage() {
-  const [gradeGoal, setGradeGoal] = useState<GradeGoal>('A_TRACK');
-  const [workStyle, setWorkStyle] = useState<WorkStyle>('GROUP');
-  const [saved, setSaved] = useState(false);
-
+export function ProfilePage({ courseId }: { courseId: Id }) {
+  // empty means not chosen yet, so a missing field can be pointed out (srs profile.missingfields)
+  const [gradeGoal, setGradeGoal] = useState<GradeGoal | ''>('');
+  const [workStyle, setWorkStyle] = useState<WorkStyle | ''>('');
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([NEW_BLOCK]);
-  const [error, setError] = useState<string | null>(null);
+  const [average, setAverage] = useState('Not yet rated');
 
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // the fields the server said were missing or bad
+  const [badFields, setBadFields] = useState<string[]>([]);
+
+  // load what is already saved for this course
+  useEffect(() => {
+    setLoading(true);
+    setSaved(false);
+    setError(null);
+    setBadFields([]);
+
+    api
+      .getProfile(courseId)
+      .then((p) => {
+        setGradeGoal(p.gradeGoal ?? '');
+        setWorkStyle(p.workStyle ?? '');
+        setBlocks(p.blocks.length > 0 ? p.blocks : [NEW_BLOCK]);
+        setAverage(p.reviewAverage);
+      })
+      .catch((err: unknown) => setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.'))
+      .finally(() => setLoading(false));
+  }, [courseId]);
 
   function updateBlock(index: number, changes: Partial<AvailabilityBlock>) {
     setBlocks(blocks.map((b, i) => (i === index ? { ...b, ...changes } : b)));
@@ -43,38 +66,42 @@ export function ProfilePage() {
     setSaved(false);
   }
 
+  async function handleSave() {
+    setSaved(false);
+    setBadFields([]);
 
-
-  function handleSave() {
-    if (blocks.length === 0) {
-      setError('Add at least one free time slot so we can find matches.');
-      setSaved(false);
-      return;
-    }
     if (blocks.some((b) => b.endMinute <= b.startMinute)) {
       setError('Each end time must be after its start time.');
-      setSaved(false);
       return;
     }
 
-    const unique = blocks.filter(
-      (b, i) =>
-        blocks.findIndex(
-          (o) => o.weekday === b.weekday && o.startMinute === b.startMinute && o.endMinute === b.endMinute,
-        ) === i,
-    );
-    setBlocks(unique);
-    
-    setError(null);
-    // TODO: send the profile to the backend once the profile endpoint exists
-    setSaved(true);
+    try {
+      const p = await api.saveProfile(courseId, { gradeGoal, workStyle, blocks });
+      // the server merges overlapping times, so show what it kept
+      setBlocks(p.blocks.length > 0 ? p.blocks : blocks);
+      setAverage(p.reviewAverage);
+      setError(null);
+      setSaved(true);
+    } catch (err) {
+      if (err instanceof ApiRequestError) {
+        setError(err.message);
+        setBadFields(err.fields ?? []);
+      } else {
+        setError('Something went wrong.');
+      }
+    }
   }
 
+  // blocks.0.startMinute and so on all count as the blocks field
+  const isBad = (field: string) => badFields.some((f) => f === field || f.startsWith(`${field}.`));
 
-    return (
+  if (loading) return <p className="muted">Loading your profile...</p>;
+
+  return (
     <section>
       <h2>My profile</h2>
       <p className="muted">Tell us how you like to study. We use this to find your matches.</p>
+      <p className="muted">Your review average: {average === 'Not yet rated' ? average : `${average} out of 5`}</p>
 
       <div className="form-field">
         <label htmlFor="grade-goal">Grade goal</label>
@@ -82,13 +109,15 @@ export function ProfilePage() {
           id="grade-goal"
           value={gradeGoal}
           onChange={(e) => {
-            setGradeGoal(e.target.value as GradeGoal);
+            setGradeGoal(e.target.value as GradeGoal | '');
             setSaved(false);
           }}
         >
+          <option value="">Choose one</option>
           <option value="A_TRACK">Aiming for an A</option>
           <option value="PASS_TRACK">Aiming to pass</option>
         </select>
+        {isBad('gradeGoal') && <span className="field-error">Pick a grade goal.</span>}
       </div>
 
       <div className="form-field">
@@ -97,13 +126,15 @@ export function ProfilePage() {
           id="work-style"
           value={workStyle}
           onChange={(e) => {
-            setWorkStyle(e.target.value as WorkStyle);
+            setWorkStyle(e.target.value as WorkStyle | '');
             setSaved(false);
           }}
         >
+          <option value="">Choose one</option>
           <option value="GROUP">Prefers group work</option>
           <option value="SOLO">Prefers solo work</option>
         </select>
+        {isBad('workStyle') && <span className="field-error">Pick a work style.</span>}
       </div>
 
       <fieldset className="availability">
@@ -142,9 +173,14 @@ export function ProfilePage() {
         ))}
 
         <button onClick={addBlock}>+ Add time slot</button>
+        {isBad('blocks') && <span className="field-error">Add at least one free time slot.</span>}
       </fieldset>
 
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
 
       <button className="save-btn" onClick={handleSave}>
         Save profile
@@ -152,5 +188,4 @@ export function ProfilePage() {
       {saved && <p className="request-sent">Profile saved</p>}
     </section>
   );
-
 }
