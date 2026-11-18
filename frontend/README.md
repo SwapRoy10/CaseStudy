@@ -5,6 +5,7 @@ React 19 + Vite + TypeScript.
 ```bash
 npm install
 npm run dev     # http://localhost:5173 (start the backend too, or use `npm run dev` from the repo root)
+npm test        # unit tests for the availability grid logic
 ```
 
 ## Talking to the backend

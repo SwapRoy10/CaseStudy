@@ -27,6 +27,10 @@ export const envSchema = z.object({
   CORS_ORIGIN: commaList.default(['http://localhost:5173', 'http://localhost:4173']),
   // requests per IP per 15 minutes on /api (health checks don't count)
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  // how many proxies sit between the internet and this server. behind them every
+  // request looks like it comes from the proxy, so the rate limits would be shared
+  // by everyone. 0 means none.
+  TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
   DATABASE_URL: z.string().optional(),
   // matching reads the short mock list in matching/mockData.ts instead of postgres.
   // left unset, it is on only when there is no DATABASE_URL.
@@ -79,6 +83,7 @@ export const config = {
   logLevel: env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : env.NODE_ENV === 'development' ? 'debug' : 'info'),
   corsOrigins: env.CORS_ORIGIN,
   rateLimitMax: env.RATE_LIMIT_MAX,
+  trustProxy: env.TRUST_PROXY,
   // explicit setting wins, otherwise no database means mock data, so the demo
   // and tests run on any laptop without postgres
   useMockData: env.USE_MOCK_DATA ? env.USE_MOCK_DATA === 'true' : !env.DATABASE_URL,

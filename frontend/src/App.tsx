@@ -18,6 +18,7 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [startError, setStartError] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<Id>('');
+  const [helpOpen, setHelpOpen] = useState(false);
   const [page, setPage] = useState<'matches' | 'requests' | 'group' | 'profile' | 'account'>('matches');
 
   // a 401 from any call means the session ended, so go back to the sign in screen
@@ -48,6 +49,7 @@ export default function App() {
       .catch(() => student.courses.map((c) => ({ courseId: c.id, code: c.code, title: c.title, section: c.section, term: c.term })));
     setCourses(list);
     setMe(student);
+    setHelpOpen(false);
     setPage('matches');
     // start in csds 393 since that's the real class, or any course they are on
     const first = student.courses.find((c) => c.code === 'CSDS 393') ?? student.courses[0];
@@ -67,7 +69,6 @@ export default function App() {
       <header className="topbar">
         <div>
           <h1>CaseStudy</h1>
-          <p className="muted">Find study partners in your course</p>
         </div>
         <ConnectionStatus />
       </header>
@@ -89,6 +90,7 @@ export default function App() {
               <span>
                 Signed in as <strong>{me.name}</strong>
               </span>
+              <button onClick={() => setHelpOpen(true)}>Help</button>
               <button onClick={handleSignOut}>Sign out</button>
             </span>
             {courses.length > 0 && (
@@ -140,7 +142,15 @@ export default function App() {
             {page === 'account' && <AccountPage me={me} />}
           </main>
 
-          {!me.tutorialCompleted && <TutorialDialog onDone={() => setMe({ ...me, tutorialCompleted: true })} />}
+          {(!me.tutorialCompleted || helpOpen) && (
+            <TutorialDialog
+              replay={me.tutorialCompleted}
+              onDone={() => {
+                setMe({ ...me, tutorialCompleted: true });
+                setHelpOpen(false);
+              }}
+            />
+          )}
         </>
       )}
     </div>

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { createApp } from './app';
+import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
 import { StateConflictError as ModuleConflictError, ValidationError } from './errors';
 import { COOKIE_NAME, createToken } from './auth/sessionToken';
@@ -132,6 +133,37 @@ describe('security and logging middleware', () => {
 
     const health = await request(limited).get('/api/health');
     expect(health.status).toBe(200);
+  });
+
+  describe('sign in limit behind a proxy', () => {
+    const wrongSignIn = (app: express.Express, from: string) =>
+      request(app)
+        .post('/api/session')
+        .set('X-Requested-With', 'CaseStudy')
+        .set('X-Forwarded-For', from)
+        .send({ email: 'nobody@case.edu', password: 'wrong password' });
+
+    async function tenWrongTries(app: express.Express) {
+      for (let i = 0; i < 10; i++) expect((await wrongSignIn(app, '10.0.0.1')).status).toBe(401);
+    }
+
+    afterEach(() => {
+      config.trustProxy = 0;
+    });
+
+    it('counts every student as one address when no proxy is trusted', async () => {
+      const app = createApp();
+      await tenWrongTries(app);
+      expect((await wrongSignIn(app, '10.0.0.2')).status).toBe(429);
+    });
+
+    it('counts each forwarded address on its own when one proxy is trusted', async () => {
+      config.trustProxy = 1;
+      const app = createApp();
+      await tenWrongTries(app);
+      expect((await wrongSignIn(app, '10.0.0.1')).status).toBe(429);
+      expect((await wrongSignIn(app, '10.0.0.2')).status).toBe(401);
+    });
   });
 });
 

@@ -64,7 +64,6 @@ export function SignInPage({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
   return (
     <section className="signin">
       <h2>Sign in</h2>
-      <p className="muted">Use your school email and password.</p>
 
       <form onSubmit={handleSubmit}>
         <div className="form-field">
