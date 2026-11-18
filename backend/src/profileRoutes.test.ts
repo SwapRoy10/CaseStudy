@@ -52,10 +52,10 @@ describe.skipIf(config.useMockData)('profile routes', () => {
     expect(res.text).toBe('null');
   });
 
-  it('gives a student with no profile the same null even in a course they are not on', async () => {
+  it('reading the profile in a course the student is not on is 409 NOT_ENROLLED, not null', async () => {
     const res = await request(app).get('/api/courses/999999999/profile').set(as(ids[me]));
-    expect(res.status).toBe(200);
-    expect(res.text).toBe('null');
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatchObject({ reason: 'NOT_ENROLLED', message: 'Your enrollment in this class could not be verified.' });
   });
 
   it('can not see matches before there is a profile: 409 NO_PROFILE', async () => {

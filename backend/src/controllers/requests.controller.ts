@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import { requireEnrolled } from '../enrollment/requireEnrolled';
 import { idString } from '../middleware/validate';
 import * as storage from '../storage';
 
@@ -24,6 +25,7 @@ export async function sendRequest(_req: Request, res: Response) {
 // GET /api/courses/:courseId/requests
 export async function listRequests(_req: Request, res: Response) {
   const { courseId } = res.locals.params as { courseId: string };
+  await requireEnrolled(res.locals.studentId, courseId);
   res.json({ courseId, requests: await storage.listRequests(me(res), courseId) });
 }
 
@@ -43,6 +45,7 @@ export async function cancel(_req: Request, res: Response) {
 // GET /api/courses/:courseId/group
 export async function getGroup(_req: Request, res: Response) {
   const { courseId } = res.locals.params as { courseId: string };
+  await requireEnrolled(res.locals.studentId, courseId);
   res.json({ group: await storage.getGroup(me(res), courseId) });
 }
 
