@@ -29,6 +29,16 @@ export interface ApiErrorBody {
   error: { code: string; message: string; reason?: string; fields?: string[] };
 }
 
+// from GET /api/courses (backend/src/courses/listCourses.ts). every course this
+// term, whether or not the student is on its roster
+export interface CourseSummary {
+  courseId: Id;
+  code: string;
+  title: string;
+  section: string;
+  term: string;
+}
+
 // from GET /api/me (backend/src/auth/types.ts)
 export interface MyCourse {
   id: Id;
