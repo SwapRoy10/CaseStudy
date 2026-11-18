@@ -156,7 +156,7 @@ Signed in. `GET` gives the student's own saved profile for the course, or `null`
 
 `PUT` takes `{ "gradeGoal", "workStyle", "blocks" }` and saves it, replacing the whole availability in one transaction, then answers with the saved profile. Overlapping blocks are merged and a block that crosses midnight is split in two, the same way matching counts them. The next matching run uses it, nothing needs a restart.
 
-Errors: `400 VALIDATION` with `fields` listing every missing or bad field, `409 NOT_ENROLLED` if the course roster doesn't have the student. A failed save leaves the old profile as it was.
+Errors: `400 VALIDATION` with `fields` listing every missing or bad field (a `courseId` that isn't a whole number is also `400`), `409 NOT_ENROLLED` if the course roster doesn't have the student. This applies to the `GET` too, so a student who isn't on the course gets `409` instead of `null`. A failed save leaves the old profile as it was.
 
 ### `POST /api/me/tutorial-complete`
 
@@ -185,7 +185,7 @@ Both students are locked and both profiles are read again inside the transaction
 
 ### `GET /api/courses/:courseId/requests`
 
-Signed in. `{ "courseId", "requests": [...] }`, the student's sent and received requests in the course, newest first. A canceled request stays in the sender's list but is left out of the recipient's. Each one has an `other` field, the other student's limited summary worked out from the caller's side (grade goal, work style, shared times, review average, same as a candidate card), or `null` if they no longer match. No names or emails are in it.
+Signed in. `{ "courseId", "requests": [...] }`, the student's sent and received requests in the course, newest first. A canceled request stays in the sender's list but is left out of the recipient's. Each one has an `other` field, the other student's limited summary worked out from the caller's side (grade goal, work style, shared times, review average, same as a candidate card), or `null` if they no longer match. No names or emails are in it. `409 NOT_ENROLLED` if the student isn't on the course roster.
 
 ### `POST /api/requests/:requestId/response`
 
@@ -206,7 +206,7 @@ Signed in. Only the sender, and only while pending. Sets it to `CANCELED` and an
 
 ### `GET /api/courses/:courseId/group`
 
-Signed in. `{ "group": null }` if the student has no group in the course, otherwise:
+Signed in. `409 NOT_ENROLLED` if the student isn't on the course roster. Otherwise `{ "group": null }` if the student has no group in the course, or:
 
 ```json
 {

@@ -134,11 +134,11 @@ A list of everyone who passed both filters, in rank order, with no limit on how 
 
 | Command | What it does |
 |---|---|
-| `npm test` | Every test. The ones that need Postgres skip themselves unless the database is up (see [`database/README.md`](../database/README.md)) |
+| `npm test` | Every test. The ones that need Postgres skip themselves unless the database is up (see [`database/README.md`](../database/README.md)). The files that only work on the in memory sample data run in their own `mock` project, so they run either way |
 | `npm run test:coverage` | Same tests, plus statement, branch, function and line coverage. Fails under 90% (80% for branches). Needs the database. Report in `coverage/index.html` |
 | `npm run test:mutation` | Stryker mutation testing on the matching code. It changes the code in small ways and checks that a test fails each time. Report in `reports/mutation/mutation.html` |
 
-The matching cases from the functional testing doc are in [`src/matching/functional.test.ts`](src/matching/functional.test.ts), with the test id in a comment above each one.
+The matching cases from the functional testing doc are in [`src/matching/functional.test.ts`](src/matching/functional.test.ts), with the test id in a comment above each one. The user, profile, availability, course and group cases (sections 5.1 to 5.4 and 5.7) are in [`src/functionalDoc.test.ts`](src/functionalDoc.test.ts), with the test id in each test name.
 
 ### Waiting on other parts
 

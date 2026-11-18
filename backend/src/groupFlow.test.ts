@@ -222,6 +222,37 @@ describe.skipIf(config.useMockData)('requests, groups and reviews over http', ()
   });
 });
 
+describe.skipIf(config.useMockData)('reading a course the student is not on', () => {
+  let course: string;
+  let outsider: bigint;
+  let cleanup: () => Promise<void>;
+
+  beforeAll(async () => {
+    // a class with one student, and a second student who is on no roster at all
+    const made = await makeClass(`ne${Date.now()}`, [{}]);
+    course = made.courseId.toString();
+    const other = await prisma.student.create({
+      data: { name: 'Not On It', schoolEmail: `ne${Date.now()}-out@test.edu`, passwordHash: 'x' },
+    });
+    outsider = other.id;
+    cleanup = async () => {
+      await prisma.student.delete({ where: { id: outsider } });
+      await made.cleanup();
+    };
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await prisma.$disconnect();
+  });
+
+  it.each(['profile', 'requests', 'group'])('GET /courses/:id/%s is 409 NOT_ENROLLED', async (route) => {
+    const res = await request(app).get(`/api/courses/${course}/${route}`).set(as(outsider));
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatchObject({ code: 'CONFLICT', reason: 'NOT_ENROLLED' });
+  });
+});
+
 describe('who can call these routes', () => {
   const routes: [string, string][] = [
     ['get', '/api/courses/1/requests'],

@@ -3,9 +3,15 @@ import { defineConfig } from 'vitest/config';
 // `npm test` runs the tests. `npm run test:coverage` also measures which lines
 // and branches the tests actually ran, and writes a browsable report to
 // coverage/index.html (the folder is gitignored).
+//
+// there are two projects. most tests run in "database", which uses postgres when
+// DATABASE_URL is set. a few files only work on the in memory sample data, so they
+// used to skip themselves whenever there was a database, which is always the case
+// in ci. "mock" runs those files with USE_MOCK_DATA=true so they run everywhere.
+const mockOnly = ['src/functionalDoc.test.ts', 'src/memoryFlow.test.ts'];
+
 export default defineConfig({
   test: {
-    globalSetup: ['./src/globalSetup.ts'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
@@ -22,5 +28,22 @@ export default defineConfig({
         branches: 80,
       },
     },
+    projects: [
+      {
+        test: {
+          name: 'database',
+          include: ['src/**/*.test.ts'],
+          exclude: ['node_modules/**', ...mockOnly],
+          globalSetup: ['./src/globalSetup.ts'],
+        },
+      },
+      {
+        test: {
+          name: 'mock',
+          include: mockOnly,
+          env: { USE_MOCK_DATA: 'true' },
+        },
+      },
+    ],
   },
 });

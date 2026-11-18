@@ -18,16 +18,18 @@ cd backend && npm run test:coverage
 
 The report opens from `backend/coverage/index.html`. The run fails if coverage drops below 90% of statements, lines and functions, or 80% of branches (`backend/vitest.config.mts`). CI starts its own Postgres, so the database tests count, and the HTML report can be downloaded from each run.
 
-Results on November 17, 2026, with Postgres running: 439 tests passed, 9 skipped (the skipped ones only run without a database).
+Results on November 18, 2026, with Postgres running: 474 tests passed, none skipped.
 
 | Criterion | Coverage |
 |---|---|
-| Statements | 97.6% |
-| Branches | 91.8% |
-| Functions | 96.5% |
-| Lines | 98.4% |
+| Statements | 97.9% |
+| Branches | 94.1% |
+| Functions | 97.1% |
+| Lines | 98.6% |
 
 Without a database the same suite only reaches about 72% of lines, because the database tests skip. That's why CI runs with Postgres.
+
+A few test files only work on the in memory sample data, `functionalDoc.test.ts` and `memoryFlow.test.ts`. They used to skip themselves whenever `DATABASE_URL` was set, which is always the case in CI, so CI never ran them and they never showed up in the report. `backend/vitest.config.mts` now has two projects. `database` runs everything else the usual way, and `mock` runs those two files with `USE_MOCK_DATA=true`, so they run with or without a database.
 
 The least covered folder is `src/profile`, at 76% of functions. Two functions in `profile.service.ts`, `listCourses` and `completeTutorial`, are never called because newer code replaced them.
 

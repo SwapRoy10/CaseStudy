@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
-import { isEnrolled } from '../matching/data';
-import { StateConflictError } from '../matching/errors';
+import { requireEnrolled } from '../enrollment/requireEnrolled';
 import { findCandidates } from '../matching/findCandidates';
 
 // GET /api/courses/:courseId/candidates
@@ -13,9 +12,7 @@ export async function getCandidates(_req: Request, res: Response) {
 
   // from the session, never the url, so nobody can request another student's matches
   const studentId: string = res.locals.studentId;
-  if (!(await isEnrolled(studentId, courseId))) {
-    throw new StateConflictError('NOT_ENROLLED', 'Your enrollment in this class could not be verified.');
-  }
+  await requireEnrolled(studentId, courseId);
 
   const candidates = await findCandidates(studentId, courseId);
   res.json({ courseId, candidates });
