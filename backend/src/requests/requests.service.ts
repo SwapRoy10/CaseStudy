@@ -76,6 +76,10 @@ export async function sendRequest(studentId: bigint, courseIdRaw: string, recipi
 export async function listRequests(studentId: bigint, courseIdRaw: string): Promise<RequestRecord[]> {
   const courseId = toId(courseIdRaw, 'courseId');
 
+  // every course-scoped route checks the roster first (test plan 4.3, RESP-5)
+  const enrolled = await prisma.enrollment.findFirst({ where: { studentId, courseId }, select: { studentId: true } });
+  if (!enrolled) throw new StateConflictError('NOT_ENROLLED');
+
   const rows = await prisma.matchRequest.findMany({
     where: {
       courseId,

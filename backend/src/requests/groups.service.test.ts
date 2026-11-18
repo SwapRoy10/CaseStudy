@@ -80,9 +80,9 @@ describe.skipIf(config.useMockData)('groups and matched profiles', () => {
       expect(theirs!.members.every((m) => !m.reviewedByMe)).toBe(true);
     });
 
-    it('only looks at the course asked for', async () => {
+    it('only looks at the course asked for, and refuses a course the student is not on (GRP-5)', async () => {
       await match(courseId, ids[a], ids[b]);
-      expect(await getGroup(ids[a], '999999999')).toBeNull();
+      await expect(getGroup(ids[a], '999999999')).rejects.toThrow('NOT_ENROLLED');
       await expect(getGroup(ids[a], 'abc')).rejects.toThrow(ValidationError);
     });
   });

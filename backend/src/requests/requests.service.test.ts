@@ -197,7 +197,11 @@ describe.skipIf(config.useMockData)('match requests', () => {
     });
 
     it('is empty for a course with no requests', async () => {
-      expect(await listRequests(ids[d], '999999999')).toEqual([]);
+            expect(await listRequests(ids[d], course)).toEqual([]);
+    });
+
+    it('refuses a course the student is not on (RESP-5)', async () => {
+      await expect(listRequests(ids[d], '999999999')).rejects.toThrow('NOT_ENROLLED');
     });
   });
 });
