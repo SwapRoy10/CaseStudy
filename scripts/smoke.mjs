@@ -83,6 +83,14 @@ const checks = [
     const body = await res.json();
     assert(res.status === 200 && Array.isArray(body.requests), `status ${res.status}`);
   }],
+  ['the course list has every course this term, and one you are not on is 409', async () => {
+    const { cookie } = await signIn('axr101@case.edu');
+    const list = await (await fetch(`${base}/api/courses`, { headers: { Cookie: cookie } })).json();
+    assert(list.courses?.some((c) => c.courseId === '2'), 'course 2 is missing from the list');
+    const res = await fetch(`${base}/api/courses/2/profile`, { headers: { Cookie: cookie } });
+    const body = await res.json();
+    assert(res.status === 409 && body.error?.reason === 'NOT_ENROLLED', `status ${res.status}`);
+  }],
   ['incomplete profile gets 409 NO_PROFILE', async () => {
     const { cookie } = await signIn('gxl107@case.edu');
     const res = await fetch(`${base}/api/courses/1/candidates`, { headers: { Cookie: cookie } });

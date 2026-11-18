@@ -1,5 +1,6 @@
 import { createApp } from './app';
 import { config } from './config';
+import { prisma } from './db';
 import { logger } from './middleware/logger';
 
 // graceful shutdown adapted from the template: on ctrl+c / SIGTERM, stop taking
@@ -31,7 +32,8 @@ function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down`);
 
   server.close(async () => {
-    // TODO (database module): close the db pool / prisma client here
+    // let go of the database connections so the process can exit cleanly
+    await prisma.$disconnect();
     logger.info('Server closed');
     process.exit(0);
   });

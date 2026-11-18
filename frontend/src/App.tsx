@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, ApiRequestError, setSignedOutHandler } from './services/api';
-import type { Id, Me, MyCourse } from './types/api';
+import type { CourseSummary, Id, Me } from './types/api';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { TutorialDialog } from './components/TutorialDialog';
 import { AccountPage } from './pages/AccountPage';
@@ -12,6 +12,8 @@ import { SignInPage } from './pages/SignInPage';
 
 export default function App() {
   const [me, setMe] = useState<Me | null>(null);
+  // every course this term, for the selector. the student may not be on all of them
+  const [courses, setCourses] = useState<CourseSummary[]>([]);
   // true until the first answer from /api/me, so the sign in screen doesn't flash
   const [checking, setChecking] = useState(true);
   const [startError, setStartError] = useState<string | null>(null);
@@ -38,12 +40,18 @@ export default function App() {
       .finally(() => setChecking(false));
   }, []);
 
-  function start(student: Me) {
+  async function start(student: Me) {
+    // if the list can't load, fall back to the courses the student is on
+    const list = await api
+      .getCourses()
+      .then((r) => r.courses)
+      .catch(() => student.courses.map((c) => ({ courseId: c.id, code: c.code, title: c.title, section: c.section, term: c.term })));
+    setCourses(list);
     setMe(student);
     setPage('matches');
-    // start in csds 393 since that's the real class
+    // start in csds 393 since that's the real class, or any course they are on
     const first = student.courses.find((c) => c.code === 'CSDS 393') ?? student.courses[0];
-    setCourseId(first ? first.id : '');
+    setCourseId(first ? first.id : (list[0]?.courseId ?? ''));
   }
 
   async function handleSignOut() {
@@ -52,7 +60,7 @@ export default function App() {
     setMe(null);
   }
 
-  const course: MyCourse | undefined = me?.courses.find((c) => c.id === courseId);
+  const course = courses.find((c) => c.courseId === courseId);
 
   return (
     <div className="shell">
@@ -83,12 +91,12 @@ export default function App() {
               </span>
               <button onClick={handleSignOut}>Sign out</button>
             </span>
-            {me.courses.length > 0 && (
+            {courses.length > 0 && (
               <label>
                 Course{' '}
                 <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
-                  {me.courses.map((c) => (
-                    <option key={c.id} value={c.id}>
+                  {courses.map((c) => (
+                    <option key={c.courseId} value={c.courseId}>
                       {c.code}
                     </option>
                   ))}
@@ -122,9 +130,7 @@ export default function App() {
           </nav>
 
           <main>
-            {me.courses.length === 0 && (
-              <p className="muted">You are not on the roster of any course yet.</p>
-            )}
+            {courses.length === 0 && <p className="muted">There are no courses to pick from yet.</p>}
             {course && page === 'matches' && (
               <CandidatesPage studentId={me.studentId} courseId={courseId} studentName={me.name} />
             )}
