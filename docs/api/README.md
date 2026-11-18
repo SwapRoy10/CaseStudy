@@ -29,7 +29,7 @@ Every error response has the same body:
 | 403 | `FORBIDDEN` | A change sent without the `X-Requested-With` header, or a roster import without the operator key |
 | 404 | `NOT_FOUND` | Unknown route |
 | 409 | `CONFLICT` | A module threw `StateConflictError`; `reason` says which (SDD 10.3) |
-| 429 | `RATE_LIMITED` | More than `RATE_LIMIT_MAX` requests (default 300) from one IP in 15 minutes. `/api/health` is exempt. Signing in is tighter: 10 wrong tries in 15 minutes |
+| 429 | `RATE_LIMITED` | More than `RATE_LIMIT_MAX` requests (default 300) from one IP in 15 minutes. Behind a proxy, set `TRUST_PROXY` to the number of proxies so each student is counted separately. `/api/health` is exempt. Signing in is tighter: 10 wrong tries in 15 minutes |
 | 503 | `UNAVAILABLE` | Any unexpected error, e.g. a failed database read. Details are logged on the server, never sent to the client |
 
 `message` is written for end users and can be shown as-is.

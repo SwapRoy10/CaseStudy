@@ -1,6 +1,7 @@
 import type {
   ApiErrorBody,
   CandidatesResponse,
+  CourseSummary,
   DemoCourse,
   GroupView,
   Id,
@@ -81,6 +82,9 @@ export const api = {
 
   // who is signed in, and their courses. 401 means nobody is
   getMe: () => request<Me>('/me'),
+
+  // this term's courses for the course selector. being listed doesn't mean enrolled
+  getCourses: () => request<{ courses: CourseSummary[] }>('/courses'),
 
   getProfile: (courseId: Id) => request<OwnProfile | null>(`/courses/${encodeURIComponent(courseId)}/profile`),
 

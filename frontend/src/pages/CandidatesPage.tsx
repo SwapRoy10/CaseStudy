@@ -100,12 +100,6 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
         </p>
       )}
 
-      {state.kind === 'ready' && state.candidates.length > 0 && (
-        <p className="muted">
-          {state.candidates.length} {state.candidates.length === 1 ? 'classmate matches' : 'classmates match'}, best match first
-        </p>
-      )}
-
       {actionError && (
         <p className="form-error" role="alert">
           {actionError}

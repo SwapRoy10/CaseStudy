@@ -13,6 +13,7 @@ import { createApiRateLimiter, createSignInRateLimiter } from './middleware/secu
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
+  app.set('trust proxy', config.trustProxy);
 
   app.use(requestLogger);
   app.use(helmet()); // standard security headers (no sniffing, no framing, etc.)

@@ -9,6 +9,13 @@ describe('parseEnv', () => {
     expect(env.CORS_ORIGIN).toEqual(['http://localhost:5173', 'http://localhost:4173']);
   });
 
+  it('trusts no proxy unless told to', () => {
+    expect(parseEnv({}).TRUST_PROXY).toBe(0);
+    expect(parseEnv({ TRUST_PROXY: '2' }).TRUST_PROXY).toBe(2);
+    expect(() => parseEnv({ TRUST_PROXY: '-1' })).toThrow(/TRUST_PROXY/);
+    expect(() => parseEnv({ TRUST_PROXY: 'yes' })).toThrow(/TRUST_PROXY/);
+  });
+
   it('splits and trims CORS_ORIGIN', () => {
     const env = parseEnv({ CORS_ORIGIN: 'http://a.test, https://b.test' });
     expect(env.CORS_ORIGIN).toEqual(['http://a.test', 'https://b.test']);

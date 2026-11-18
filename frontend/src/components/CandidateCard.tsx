@@ -89,7 +89,7 @@ export function CandidateCard({ candidate, rank, studentId, request, busy, onSen
         <>
           {request?.status === 'DECLINED' && <p className="request-note">Your last request was declined.</p>}
           <button className="request-btn" disabled={busy} onClick={onSend}>
-            Request to study together
+            Send match request
           </button>
         </>
       )}

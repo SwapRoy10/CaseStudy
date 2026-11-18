@@ -69,5 +69,5 @@ Both edges come from SDD 5.1, and both now have tests.
 
 ## What isn't measured yet
 
-* The frontend has no automated tests, so it has no coverage numbers. Screen tests are checked by hand.
+* The frontend only has unit tests for the availability grid logic (`frontend/src/availability.test.ts`, run in CI), so it has no coverage numbers. Screen tests are checked by hand.
 * Mutation testing only covers the matching engine.

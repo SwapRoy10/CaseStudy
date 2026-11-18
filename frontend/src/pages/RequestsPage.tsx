@@ -87,10 +87,6 @@ export function RequestsPage({ studentId, courseId }: { studentId: Id; courseId:
   return (
     <section>
       <h2>Match requests</h2>
-      <p className="muted">
-        A group forms when the classmate you asked says yes. You see their name and contact details after that.
-      </p>
-
       {notices.map((text, i) => (
         <div className="notice" role="status" key={`${i}-${text}`}>
           <p>{text}</p>
