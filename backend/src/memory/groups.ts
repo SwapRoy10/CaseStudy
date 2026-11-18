@@ -1,16 +1,17 @@
-import { ForbiddenError, toId } from '../errors';
+import { ForbiddenError, StateConflictError, toId } from '../errors';
 import { toOwnProfile } from '../profile/ownProfile';
 import { GroupView } from '../requests/types';
 import { REVIEW_CRITERIA } from '../reviews/criteria';
 import { students } from '../sampleData';
 import { getOwnProfile } from './profiles';
-import { store } from './store';
+import { isEnrolled, store } from './store';
 
 // the same two functions as requests/groups.service.ts, on the in memory store
 
 export async function getGroup(studentId: bigint, courseIdRaw: string): Promise<GroupView | null> {
   const courseId = toId(courseIdRaw, 'courseId').toString();
   const me = studentId.toString();
+  if (!isEnrolled(me, courseId)) throw new StateConflictError('NOT_ENROLLED');
 
   const membership = store.memberships.find((m) => m.studentId === me && m.courseId === courseId);
   if (!membership) return null;

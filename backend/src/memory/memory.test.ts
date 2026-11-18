@@ -325,7 +325,7 @@ describe('groups and matched profiles', () => {
       { studentId: '101', name: 'Alex Rivera', reviewedByMe: false },
       { studentId: '102', name: 'Brianna Cole', reviewedByMe: false },
     ]);
-    expect(await getGroup(101n, '2')).toBeNull();
+    await expect(getGroup(101n, '2')).rejects.toThrow('NOT_ENROLLED'); // GRP-5
   });
 
   it('shows the full profile with the email after an accepted request, from either side', async () => {

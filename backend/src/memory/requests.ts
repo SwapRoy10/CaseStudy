@@ -48,6 +48,7 @@ export async function sendRequest(studentId: bigint, courseIdRaw: string, recipi
   const courseId = toId(courseIdRaw, 'courseId').toString();
   const recipientId = toId(recipientIdRaw, 'recipientId').toString();
   const me = studentId.toString();
+  if (!isEnrolled(me, courseId)) throw new StateConflictError('NOT_ENROLLED');
   if (recipientId === me) throw new ValidationError(['recipientId']);
 
   if (!isEnrolled(me, courseId) || !isEnrolled(recipientId, courseId)) throw new StateConflictError('NOT_ENROLLED');
