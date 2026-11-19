@@ -30,6 +30,7 @@ describe('POST /api/demo/session', () => {
 
   it('works for every student on the demo roster', async () => {
     const roster = await request(app).get('/api/demo/roster');
+    expect(roster.status, JSON.stringify(roster.body)).toBe(200);
     const csds = roster.body.courses.find((c: { code: string }) => c.code === 'CSDS 393');
     for (const student of csds.students.slice(0, 5)) {
       const res = await request(app).post('/api/demo/session').set(CLIENT).send({ studentId: student.id });
