@@ -151,3 +151,6 @@ vite.config.ts.timestamp-*
 # mutation testing output
 reports/
 .stryker-tmp/
+
+# macOS folder files
+.DS_Store
