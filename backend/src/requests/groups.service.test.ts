@@ -108,6 +108,14 @@ describe.skipIf(config.useMockData)('groups and matched profiles', () => {
       ]);
     });
 
+    it('refuses to share a profile removed after the match was accepted', async () => {
+      await match(courseId, ids[a], ids[b]);
+      await prisma.profile.delete({
+        where: { studentId_courseId: { studentId: ids[b], courseId } },
+      });
+      await expect(getMatchedProfile(ids[a], course, ids[b].toString())).rejects.toThrow(ForbiddenError);
+    });
+
     it('works from either side of the request', async () => {
       await match(courseId, ids[a], ids[b]);
       expect((await getMatchedProfile(ids[b], course, ids[a].toString())).studentId).toBe(ids[a].toString());

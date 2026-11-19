@@ -1,9 +1,13 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { config } from './config';
 import { prisma } from './db';
 import { hashPassword, verifyPassword } from './auth/password';
 import { seedSampleData } from './seedSampleData';
 import { DEMO_PASSWORD, reviewAverage, reviews, students } from './sampleData';
+
+it('has no review average for a student who has received no ratings', () => {
+  expect(reviewAverage('108')).toBeNull();
+});
 
 // the seed already ran once in globalSetup.ts. these run it again to make sure
 // it really is safe to rerun, since the readme tells people to do exactly that
@@ -111,6 +115,25 @@ describe.skipIf(config.useMockData)('seedSampleData', () => {
       // put back as sample data, with the demo password
       const row = await prisma.student.findUniqueOrThrow({ where: { id: 999n } });
       expect(await verifyPassword(row.passwordHash, DEMO_PASSWORD)).toBe(true);
+    });
+
+    it('recognizes renamed sample accounts sharing the original demo password', async () => {
+      const passwordHash = await hashPassword(DEMO_PASSWORD);
+      const findMany = vi.spyOn(prisma.student, 'findMany').mockResolvedValueOnce(
+        [101n, 102n].map((id) => ({
+          id,
+          name: 'Renamed Demo Student',
+          schoolEmail: `renamed${id}@test.edu`,
+          passwordHash,
+          tutorialCompleted: false,
+        })),
+      );
+      try {
+        await seedSampleData(prisma);
+        expect(findMany).toHaveBeenCalled();
+      } finally {
+        findMany.mockRestore();
+      }
     });
 
     it('is fine with a database that still has the old placeholder hash', async () => {

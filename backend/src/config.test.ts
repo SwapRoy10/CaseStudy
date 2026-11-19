@@ -1,5 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseEnv } from './config';
+
+it('logs an invalid startup setting and exits with status 1', async () => {
+  const failure = new Error('startup exited');
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const exit = vi.spyOn(process, 'exit').mockImplementation(() => { throw failure; });
+  vi.stubEnv('PORT', 'invalid');
+  vi.resetModules();
+  try {
+    await expect(import('./config.js')).rejects.toBe(failure);
+    expect(log).toHaveBeenCalledWith(expect.stringMatching(/Invalid backend environment[\s\S]*PORT/));
+    expect(exit).toHaveBeenCalledWith(1);
+  } finally {
+    exit.mockRestore();
+    log.mockRestore();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  }
+});
 
 describe('parseEnv', () => {
   it('fills in defaults for local dev', () => {

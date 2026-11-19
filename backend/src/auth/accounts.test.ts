@@ -4,7 +4,7 @@ import { prisma } from '../db';
 import { DEMO_PASSWORD } from '../sampleData';
 import * as mock from './mockAccounts';
 import * as postgres from './postgresAccounts';
-import { verifyPassword } from './password';
+import { hashPassword, verifyPassword } from './password';
 
 // both account sources have to give the same answers. the in memory one always
 // runs, the postgres one only when there is a seeded database (npm run db:up)
@@ -16,6 +16,19 @@ const sources = [
 
 afterAll(async () => {
   await prisma.$disconnect();
+});
+
+it('looks up a demo student by id and uses their updated password hash', async () => {
+  const account = await mock.findAccountById('108');
+  expect(account?.id).toBe('108');
+  expect(await mock.findAccountById('999999')).toBeNull();
+  const passwordHash = await hashPassword('replacement demo password');
+  await mock.setPasswordHash(account!.id, passwordHash);
+  try {
+    expect((await mock.findAccountById(account!.id))?.passwordHash).toBe(passwordHash);
+  } finally {
+    await mock.setPasswordHash(account!.id, account!.passwordHash);
+  }
 });
 
 describe.each(sources)('accounts from $name', ({ source, skip }) => {

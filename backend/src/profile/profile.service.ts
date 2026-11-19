@@ -5,17 +5,6 @@ import { profileInputSchema, normalizeBlocks } from './profile.schema';
 
 // studentId always comes from the logged-in session, never from the request body.
 
-export async function listCourses(studentId: bigint) {
-  const rows = await repo.listEnrolledCourses(studentId);
-  return rows.map((e) => ({
-    id: e.course.id.toString(),
-    code: e.course.code,
-    section: e.course.section,
-    term: e.course.term,
-    hasProfile: e.profile !== null,
-  }));
-}
-
 export async function getOwnProfile(studentId: bigint, courseIdRaw: string | bigint) {
   const courseId = toId(courseIdRaw, 'courseId');
   const [student, profile, avg] = await Promise.all([
@@ -56,8 +45,4 @@ export async function saveProfile(studentId: bigint, courseIdRaw: string | bigin
   });
 
   return getOwnProfile(studentId, courseId);
-}
-
-export async function completeTutorial(studentId: bigint) {
-  await repo.setTutorialCompleted(studentId);
 }
