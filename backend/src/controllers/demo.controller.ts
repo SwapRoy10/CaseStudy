@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { config } from '../config';
 import { prisma } from '../db';
 import { courses, enrollments, profiles, students } from '../sampleData';
+import { Prisma } from '@prisma/client';
 
 // demo stand-in, same as the X-Student-Id header: there's no real login yet, so
 // the frontend needs some way to pick who you are. this lists each course that
@@ -41,7 +42,7 @@ export function rosterFromSampleData(): DemoCourse[] {
 }
 
 export async function rosterFromDatabase(): Promise<DemoCourse[]> {
-  const rows = await prisma.course.findMany({
+    const rows = await prisma.$transaction((tx) => tx.course.findMany({
     where: { enrollments: { some: { profile: { isNot: null } } } },
     orderBy: { id: 'asc' },
     include: {
@@ -50,7 +51,7 @@ export async function rosterFromDatabase(): Promise<DemoCourse[]> {
         include: { student: { select: { name: true } }, profile: { select: { id: true } } },
       },
     },
-  });
+    }), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 
   return rows.map((c) => ({
     id: c.id.toString(),
