@@ -1,7 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { Prisma } from '@prisma/client';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { config } from '../config';
 import { prisma } from '../db';
 import { ForbiddenError, StateConflictError, ValidationError } from '../errors';
+import * as matching from '../matching/findCandidates';
 import { cancel, listRequests, respond, sendRequest } from './requests.service';
 import { makeClass } from './testUtils';
 
@@ -36,6 +38,42 @@ describe.skipIf(config.useMockData)('match requests', () => {
   });
 
   const send = (from: number, to: number) => sendRequest(ids[from], course, ids[to].toString());
+
+  it('reports a duplicate request when the database rejects a competing insert', async () => {
+    const transaction = vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('duplicate request', { code: 'P2002', clientVersion: Prisma.prismaVersion.client }),
+    );
+    try {
+      await expect(send(a, b)).rejects.toMatchObject({ code: 'DUPLICATE_REQUEST' });
+    } finally {
+      transaction.mockRestore();
+    }
+  });
+
+  it('reports a group conflict when the database rejects a competing accept', async () => {
+    const pending = await send(a, b);
+    const transaction = vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('duplicate membership', { code: 'P2002', clientVersion: Prisma.prismaVersion.client }),
+    );
+    try {
+      await expect(respond(ids[b], pending.requestId, 'ACCEPT')).rejects.toMatchObject({ code: 'GROUP_MERGE' });
+    } finally {
+      transaction.mockRestore();
+      await cancel(ids[a], pending.requestId);
+    }
+  });
+
+  it('propagates an unexpected matching error while listing requests', async () => {
+    const pending = await send(a, b);
+    const failure = new Error('matching failed');
+    const candidates = vi.spyOn(matching, 'findCandidates').mockRejectedValueOnce(failure);
+    try {
+      await expect(listRequests(ids[a], course)).rejects.toBe(failure);
+    } finally {
+      candidates.mockRestore();
+      await cancel(ids[a], pending.requestId);
+    }
+  });
 
   describe('sendRequest', () => {
     it('saves a pending request from the signed in student', async () => {

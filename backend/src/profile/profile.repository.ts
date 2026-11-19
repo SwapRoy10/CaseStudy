@@ -9,14 +9,6 @@ export const profileRepository = {
     return prisma.student.findUnique({ where: { id: studentId } });
   },
 
-  listEnrolledCourses(studentId: bigint) {
-    return prisma.enrollment.findMany({
-      where: { studentId },
-      include: { course: true, profile: { select: { id: true } } },
-      orderBy: { courseId: 'asc' },
-    });
-  },
-
   findProfile(studentId: bigint, courseId: bigint) {
     return prisma.profile.findUnique({
       where: { studentId_courseId: { studentId, courseId } },
@@ -51,9 +43,5 @@ export const profileRepository = {
   async replaceBlocks(tx: Tx, profileId: bigint, blocks: Block[]) {
     await tx.availabilityBlock.deleteMany({ where: { profileId } });
     await tx.availabilityBlock.createMany({ data: blocks.map((b) => ({ ...b, profileId })) });
-  },
-
-  setTutorialCompleted(studentId: bigint) {
-    return prisma.student.update({ where: { id: studentId }, data: { tutorialCompleted: true } });
   },
 };

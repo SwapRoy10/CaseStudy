@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Prisma } from '@prisma/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../config';
 import { prisma } from '../db';
 import { ForbiddenError, ValidationError } from '../errors';
@@ -36,6 +37,17 @@ describe.skipIf(config.useMockData)('peer reviews', () => {
 
   const review = (reviewer: number, reviewee: number, ratings: unknown = rate(4)) =>
     submitReview(ids[reviewer], groupId, { revieweeId: ids[reviewee].toString(), ratings });
+
+  it('reports a duplicate review when the database rejects a competing insert', async () => {
+    const transaction = vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('duplicate review', { code: 'P2002', clientVersion: Prisma.prismaVersion.client }),
+    );
+    try {
+      await expect(review(a, b)).rejects.toMatchObject({ code: 'DUPLICATE_REVIEW' });
+    } finally {
+      transaction.mockRestore();
+    }
+  });
 
   describe('submitting', () => {
     it('saves one rating per criterion and gives back the average', async () => {
