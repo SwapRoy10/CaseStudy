@@ -18,16 +18,14 @@ export const profileInputSchema = z.object({
 export type Block = z.infer<typeof blockSchema>;
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 
-// a block that ends before it starts crosses midnight, so split it into two days.
-// after that, duplicates and overlapping blocks get merged with the same rule
-// matching uses, so what we save is exactly what matching counts (sdd 5.3)
+// splits blocks across midnight, merges like matching so saved equals counted
 export function normalizeBlocks(blocks: Block[]): Block[] {
   const split = blocks.flatMap((b) =>
     b.endMinute > b.startMinute
       ? [b]
       : [
-          { weekday: b.weekday, startMinute: b.startMinute, endMinute: 1440 },
-          { weekday: (b.weekday + 1) % 7, startMinute: 0, endMinute: b.endMinute },
+          { weekday: b.weekday, startMinute: b.startMinute, endMinute: 1440 }, // rest of the first day
+          { weekday: (b.weekday + 1) % 7, startMinute: 0, endMinute: b.endMinute }, // start of the next day
         ],
   );
   return mergeLikeMatching(split);

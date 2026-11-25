@@ -1,7 +1,6 @@
 import type { AvailabilityBlock } from './types/api';
 
-// the grid works in half hours. a cell is day * 48 + slot, and a set of cells
-// is everything the student marked as free
+// grid works in half hours, a cell is day * 48 + slot
 
 export const SLOTS_PER_DAY = 48;
 const SLOT_MINUTES = 30;
@@ -16,20 +15,20 @@ export function cellOf(day: number, slot: number) {
 export function toCells(blocks: AvailabilityBlock[]): Cells {
   const cells: Cells = new Set();
   for (const b of blocks) {
-    const first = Math.floor(b.startMinute / SLOT_MINUTES);
-    const last = Math.ceil(b.endMinute / SLOT_MINUTES) - 1;
+    const first = Math.floor(b.startMinute / SLOT_MINUTES); // slot the block starts in
+    const last = Math.ceil(b.endMinute / SLOT_MINUTES) - 1; // last slot it touches
     for (let slot = first; slot <= last; slot++) cells.add(cellOf(b.weekday, slot));
   }
   return cells;
 }
 
-// runs of free half hours become blocks. a block never runs past midnight
+// runs of free half hours become blocks, never past midnight
 export function toBlocks(cells: Cells): AvailabilityBlock[] {
   const blocks: AvailabilityBlock[] = [];
   for (let day = 0; day < 7; day++) {
-    let start = -1;
+    let start = -1; // -1 means no run is open
     for (let slot = 0; slot <= SLOTS_PER_DAY; slot++) {
-      const free = slot < SLOTS_PER_DAY && cells.has(cellOf(day, slot));
+      const free = slot < SLOTS_PER_DAY && cells.has(cellOf(day, slot)); // slot 48 closes a run at midnight
       if (free && start < 0) start = slot;
       if (!free && start >= 0) {
         blocks.push({ weekday: day, startMinute: start * SLOT_MINUTES, endMinute: slot * SLOT_MINUTES });
@@ -47,7 +46,7 @@ export function slotLabel(slot: number) {
   return `${hour % 12 === 0 ? 12 : hour % 12}:${minutes} ${hour < 12 ? 'am' : 'pm'}`;
 }
 
-// the cells both sets have in common, used by the tutorial's practice matching
+// cells in both sets, for the tutorial's practice matching
 export function sharedCells(a: Cells, b: Cells): Cells {
   return new Set([...a].filter((cell) => b.has(cell)));
 }

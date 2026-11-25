@@ -3,7 +3,7 @@ import { students } from '../sampleData';
 import { profileInputSchema, normalizeBlocks } from '../profile/profile.schema';
 import { averageFor, isEnrolled, store } from './store';
 
-// the same two functions as profile/profile.service.ts, on the in memory store
+// same two functions as profile/profile.service.ts, on the in memory store
 
 export async function getOwnProfile(studentId: bigint, courseIdRaw: string | bigint) {
   const courseId = toId(courseIdRaw, 'courseId').toString();
@@ -47,7 +47,7 @@ export async function saveProfile(studentId: bigint, courseIdRaw: string | bigin
     blocks,
   };
   const at = store.profiles.findIndex((p) => p.studentId === id && p.courseId === courseId);
-  if (at >= 0) store.profiles[at] = saved;
+  if (at >= 0) store.profiles[at] = saved; // replace the old one
   else store.profiles.push(saved);
 
   return getOwnProfile(studentId, courseId);

@@ -9,9 +9,7 @@ function when(iso: string) {
   return new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-// the inbox and outbox (srs ui-4). it checks for changes every 30 seconds and
-// right after you do something, and says what changed in a notice here. nothing
-// goes out by email.
+// inbox and outbox (srs ui-4), polls every 30 seconds and after each action
 export function RequestsPage({ studentId, courseId }: { studentId: Id; courseId: Id }) {
   const [requests, setRequests] = useState<RequestRecord[]>([]);
   const [tab, setTab] = useState<'received' | 'sent'>('received');
@@ -20,7 +18,7 @@ export function RequestsPage({ studentId, courseId }: { studentId: Id; courseId:
   const [notices, setNotices] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<Id | null>(null);
 
-  // what each request looked like last time, to spot changes. empty until the first load.
+  // last seen state of each request, empty until first load
   const lastSeen = useRef<Map<Id, string> | null>(null);
 
   async function load() {
@@ -36,7 +34,7 @@ export function RequestsPage({ studentId, courseId }: { studentId: Id; courseId:
     }
   }
 
-  // compares with the last load and writes a notice for anything new or changed
+  // compare with the last load, notice anything new or changed
   function noticeChanges(fresh: RequestRecord[]) {
     const before = lastSeen.current;
     lastSeen.current = new Map(fresh.map((r) => [r.requestId, r.status]));
@@ -65,14 +63,14 @@ export function RequestsPage({ studentId, courseId }: { studentId: Id; courseId:
     return () => clearInterval(timer);
   }, [courseId]);
 
-  // answering or canceling, then straight to a fresh list
+  // answer or cancel, then refresh the list
   async function act(requestId: Id, action: () => Promise<unknown>) {
     setBusyId(requestId);
     setError(null);
     try {
       await action();
     } catch (err) {
-      // conflicts like "already answered" or "group merging is not available" come worded for the student
+      // conflicts like "already answered" are worded for the student
       setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.');
     } finally {
       setBusyId(null);
@@ -124,7 +122,7 @@ export function RequestsPage({ studentId, courseId }: { studentId: Id; courseId:
 
             {r.other ? <SummaryDetails summary={r.other} /> : <p className="muted">This classmate no longer matches your profile.</p>}
 
-            {/* only the recipient can answer, only the sender can cancel, and only while pending */}
+            {/* recipient answers, sender cancels, only while pending */}
             {r.status === 'PENDING' && tab === 'received' && (
               <p className="actions">
                 <button className="request-btn" disabled={busyId === r.requestId} onClick={() => act(r.requestId, () => api.respondToRequest(r.requestId, 'ACCEPT'))}>

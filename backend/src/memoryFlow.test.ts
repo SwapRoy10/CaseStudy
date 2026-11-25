@@ -6,8 +6,7 @@ import { config } from './config';
 import { resetStore } from './memory/store';
 import { REVIEW_CRITERIA } from './reviews/criteria';
 
-// the demo with no DATABASE_URL: the same flow as groupFlow.test.ts, over http,
-// on the in memory store and the sample students. these only run in that mode.
+// demo with no DATABASE_URL, same flow as groupFlow.test.ts on the memory store
 
 const app = createApp();
 const CLIENT = { 'X-Requested-With': 'CaseStudy' };

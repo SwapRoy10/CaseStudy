@@ -12,23 +12,23 @@
 
 Open http://localhost:4173. You land on the sign in screen.
 
-0. **Sign in.** Under "Demo" pick a course and a student, then "Sign in as this student". Or type `axr101@case.edu` with the password `casestudy123`. A wrong password shows "Email or password is incorrect." and stays on the sign in screen.
+0. Sign in: under "Demo" pick a course and a student, then "Sign in as this student". Or type `axr101@case.edu` with the password `casestudy123`. A wrong password shows "Email or password is incorrect." and stays on the sign in screen.
 
-1. **The app is connected.** Point out the green "API connected" dot: the React frontend is talking to the Express backend.
-2. **Matching works.** Signed in as `101` (Alex Rivera), you see three ranked candidates. #1 shares the most free time (two blocks).
-3. **Tiebreaks follow the spec.** #2 and #3 each share one block. #2 is ranked higher because it shares 101's group work style.
-4. **Ratings don't affect order.** #3 has the best rating (4.9) and is still last. Reviews are only shown, never used to rank (CO-3).
-5. **Privacy.** Cards show no names or contact details before a match (limited view).
-6. **Filters.** Sign out and pick `104` (pass track): only classmates with the same grade goal appear.
-7. **Error handling.** Sign out and pick `107` (no availability saved): the app explains what to do instead of failing.
+1. The app is connected: point out the green "API connected" dot: the React frontend is talking to the Express backend.
+2. Matching works: signed in as `101` (Alex Rivera), you see three ranked candidates. #1 shares the most free time (two blocks).
+3. Tiebreaks follow the spec: #2 and #3 each share one block. #2 is ranked higher because it shares 101's group work style.
+4. Ratings don't affect order: #3 has the best rating (4.9) and is still last. Reviews are only shown, never used to rank (CO-3).
+5. Privacy: cards show no names or contact details before a match (limited view).
+6. Filters: sign out and pick `104` (pass track): only classmates with the same grade goal appear.
+7. Error handling: sign out and pick `107` (no availability saved): the app explains what to do instead of failing.
 
 ## Forming a group (works with or without a database)
 
-8. **Send a request.** On a candidate card press "Send request". It turns into "Request sent", and stays that way after a reload.
-9. **Answer it.** Sign out, pick that classmate, open Requests. They see the request with a summary and no name. Accept it.
-10. **A group forms.** Open Group. Both students are in it. The first student can now open the other's full profile, with their email.
-11. **Groups don't merge.** If both students are already in different groups, accepting says group merging is not available.
-12. **Peer review.** In Group, rate a member on every criterion, send it, and the form goes read only. Their profile now shows the average, and it never changes the match order.
+8. Send a request: on a candidate card press "Send request". It turns into "Request sent", and stays that way after a reload.
+9. Answer it: sign out, pick that classmate, open Requests. They see the request with a summary and no name. Accept it.
+10. A group forms: open Group. Both students are in it. The first student can now open the other's full profile, with their email.
+11. Groups don't merge: if both students are already in different groups, accepting says group merging is not available.
+12. Peer review: in Group, rate a member on every criterion, send it, and the form goes read only. Their profile now shows the average, and it never changes the match order.
 
 ## If something goes wrong
 

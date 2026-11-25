@@ -2,18 +2,16 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { Id, Profile } from './types';
 
-// postgres reads for matching (sdd 5.4). ids are bigint in the database but
-// strings everywhere else, so they get converted here and nowhere else.
+// postgres reads for matching (sdd 5.4), bigint ids here, strings elsewhere
 
 const withBlocks = { blocks: { orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }] } } satisfies Prisma.ProfileInclude;
 
 type ProfileRow = Prisma.ProfileGetPayload<{ include: typeof withBlocks }>;
 
-// exported so the match request code can turn rows it reads inside its own
-// transaction into the same profile shape and call isEligible on them
+// exported so requests can turn rows from its own transaction into profiles
 export function toProfile(row: ProfileRow): Profile {
   return {
-    profileId: row.id.toString(),
+    profileId: row.id.toString(), // bigint to string
     studentId: row.studentId.toString(),
     courseId: row.courseId.toString(),
     gradeGoal: row.gradeGoal,
@@ -30,18 +28,16 @@ export async function isEnrolled(studentId: Id, courseId: Id): Promise<boolean> 
   return row !== null;
 }
 
-// a profile only exists for an enrolled student, so the roster check is built in.
-// blocks come back in the same query, not one read per student (sdd 5.4).
+// enrolled students only, blocks in the same query (sdd 5.4)
 export async function getCourseProfiles(courseId: Id): Promise<Profile[]> {
   const rows = await prisma.profile.findMany({
-    where: { courseId: BigInt(courseId), blocks: { some: {} } },
+    where: { courseId: BigInt(courseId), blocks: { some: {} } }, // skip profiles with no free time
     include: withBlocks,
   });
   return rows.map(toProfile);
 }
 
-// average over every rating a student has received, the same figure the profile
-// page shows. students with no reviews are left out of the map.
+// average of a student's ratings, no reviews means missing from the map
 export async function getAverages(studentIds: Id[]): Promise<Map<Id, number>> {
   if (studentIds.length === 0) return new Map();
 

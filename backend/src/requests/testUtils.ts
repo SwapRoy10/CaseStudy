@@ -2,8 +2,7 @@ import { prisma } from '../db';
 import { GradeGoal, WorkStyle } from '@prisma/client';
 import { respond, sendRequest } from './requests.service';
 
-// a small class of its own for the request, group and review tests, so they
-// don't touch the sample data other tests read. cleanup() removes all of it.
+// own small class so tests don't touch the sample data, cleanup() removes it
 
 export interface Spec {
   goal?: GradeGoal;

@@ -7,8 +7,7 @@ import * as matching from '../matching/findCandidates';
 import { cancel, listRequests, respond, sendRequest } from './requests.service';
 import { makeClass } from './testUtils';
 
-// match requests against a real database. each describe makes its own small class.
-// 0 and 1 are a good pair, 2 is pass track, 3 is free at another time, 4 has no profile.
+// match requests on a real db, each describe makes its own small class
 
 const tag = `rq${Date.now()}`;
 
@@ -166,7 +165,7 @@ describe.skipIf(config.useMockData)('match requests', () => {
         expect(mine.slice(0, 2).map((r) => r.requestId)).toEqual([newer.requestId, older.requestId]);
 
         const sent = mine.find((r) => r.requestId === older.requestId)!;
-        // from a's side the other student is b: same grade goal, group vs solo, one shared block
+        // a's view of b: same goal, group vs solo, one shared block
         expect(sent.other).toEqual({
           candidateId: ids[b].toString(),
           gradeGoal: 'A_TRACK',

@@ -6,7 +6,7 @@ import type { Cells } from '../availability';
 import { AvailabilityGrid } from '../components/AvailabilityGrid';
 
 export function ProfilePage({ courseId }: { courseId: Id }) {
-  // empty means not chosen yet, so a missing field can be pointed out (srs profile.missingfields)
+  // empty means not chosen, so missing fields can be flagged
   const [gradeGoal, setGradeGoal] = useState<GradeGoal | ''>('');
   const [workStyle, setWorkStyle] = useState<WorkStyle | ''>('');
   const [cells, setCells] = useState<Cells>(new Set());
@@ -15,12 +15,12 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // not on this course's roster, so there is no profile to show or save
+  // not on this course's roster, no profile to show or save
   const [notEnrolled, setNotEnrolled] = useState(false);
-  // the fields the server said were missing or bad
+  // fields the server said were missing or bad
   const [badFields, setBadFields] = useState<string[]>([]);
 
-  // load what is already saved for this course
+  // load what is saved for this course
   useEffect(() => {
     setLoading(true);
     setSaved(false);
@@ -31,7 +31,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
     api
       .getProfile(courseId)
       .then((p) => {
-        // null means nothing is saved for this course yet
+        // null means nothing saved yet
         setGradeGoal(p ? p.gradeGoal : '');
         setWorkStyle(p ? p.workStyle : '');
         setCells(toCells(p ? p.blocks : []));
@@ -50,7 +50,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
 
     try {
       const p = await api.saveProfile(courseId, { gradeGoal, workStyle, blocks: toBlocks(cells) });
-      // the server merges overlapping times, so draw what it kept
+      // server merges overlapping times, so draw what it kept
       setCells(toCells(p.blocks));
       setAverage(p.reviewAverage);
       setError(null);
@@ -65,7 +65,7 @@ export function ProfilePage({ courseId }: { courseId: Id }) {
     }
   }
 
-  // blocks.0.startMinute and so on all count as the blocks field
+  // blocks.0.startMinute and the like count as the blocks field
   const isBad = (field: string) => badFields.some((f) => f === field || f.startsWith(`${field}.`));
 
   if (loading) return <p className="muted">Loading your profile...</p>;

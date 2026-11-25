@@ -1,7 +1,4 @@
-// the tests reseed the database and add and delete rows, so they should only
-// ever run against a database on this machine (or the one CI starts). pointing
-// them at the shared one would rewrite the demo data on every run.
-// set ALLOW_REMOTE_DB_TESTS=true if you really mean it.
+// tests reseed and delete rows, so only a local db is safe
 export function isLocalDatabase(url: string | undefined): boolean {
   if (!url) return false;
   try {
@@ -12,7 +9,7 @@ export function isLocalDatabase(url: string | undefined): boolean {
   }
 }
 
-// true when the tests are allowed to touch the database in this url
+// ALLOW_REMOTE_DB_TESTS=true overrides the local check
 export function testsMayUseDatabase(url: string | undefined, env: NodeJS.ProcessEnv = process.env): boolean {
   return isLocalDatabase(url) || env.ALLOW_REMOTE_DB_TESTS === 'true';
 }

@@ -3,8 +3,7 @@ import { findCandidates } from './findCandidates';
 import { getAverages, getCourseProfiles } from './data';
 import { block, profile } from './testUtils';
 
-// runs against the mock data in mockData.ts. the functions are wrapped so a test
-// can swap in one bad response with mockResolvedValueOnce
+// uses mockData.ts, mockResolvedValueOnce swaps in one bad response
 vi.mock('./data', async () => {
   const mock = await import('./mockData.js');
   return {
@@ -17,8 +16,7 @@ vi.mock('./data', async () => {
 describe('findCandidates', () => {
   it('returns ranked candidates for the requester', async () => {
     const result = await findCandidates('101', '1');
-    // 102 overlaps mon + wed. 106 and 103 overlap once, 106 wins on work style.
-    // 104 is pass track, 105 has no overlap, 107 has no availability.
+    // 102 overlaps mon + wed, 106 beats 103 on work style, 104 105 107 are out
     expect(result.map((c) => c.candidateId)).toEqual(['102', '106', '103']);
   });
 
@@ -68,13 +66,11 @@ describe('findCandidates', () => {
     await expect(findCandidates('101', '1')).rejects.toThrow('connection refused');
   });
 
-  // nfr-perf-1: ranked list in under 3 seconds for a class of 200. this only times
-  // the matching code, the real endpoint test with postgres is in sdd 8.3
+  // nfr-perf-1: ranked list under 3 seconds for 200 students, times matching only
   it('ranks a class of 200 students well under 3 seconds', async () => {
     const big = [];
     for (let i = 1; i <= 200; i++) {
-      // everyone gets eight 30 min blocks spread over mon to fri, shifted a bit per
-      // student so overlap counts differ and the sort has real work to do
+      // 8 half hour blocks mon to fri, shifted per student so the sort has real work
       const blocks = [];
       for (let k = 0; k < 8; k++) {
         const day = 1 + (k % 5);
@@ -94,8 +90,7 @@ describe('findCandidates', () => {
   });
 });
 
-// these are for mistakes in the real db layer later. without the checks each of
-// these would give wrong matches or an empty list instead of an error.
+// bad rows from the db layer must throw, not give wrong matches
 describe('findCandidates with bad data from the db layer', () => {
   const ok = profile('201', 'A_TRACK', 'GROUP', [block(1, 9, 10)]);
 

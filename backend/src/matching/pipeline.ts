@@ -8,9 +8,7 @@ import {
   tieBreakByWorkStyle,
 } from './stages';
 
-// the five rules in the order from srs Match.RuleOrder.
-// nothing else is allowed to affect the result (Match.CriteriaLimit),
-// so review averages stay out of here.
+// the five rules in srs Match.RuleOrder, nothing else changes the result
 export function rankCandidates(
   requester: Profile,
   classmates: Profile[],
@@ -26,9 +24,7 @@ export function rankCandidates(
   return ranked;
 }
 
-// eligibility check the requests module calls before saving a request (sdd 3.3).
-// the recipient has to be in the same course and still pass the grade and
-// availability filters. also false for yourself, since stage 1 drops the requester.
+// used before a request is saved (sdd 3.3), false for yourself too
 export function isEligible(sender: Profile, recipient: Profile): boolean {
   if (sender.courseId !== recipient.courseId) return false;
 

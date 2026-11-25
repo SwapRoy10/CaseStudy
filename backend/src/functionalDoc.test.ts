@@ -6,17 +6,7 @@ import { config } from './config';
 import { resetStore, store } from './memory/store';
 import { REVIEW_CRITERIA } from './reviews/criteria';
 
-// test cases from the functional testing doc, sections 5.1 to 5.4 and 5.7
-// (user, profile, availability block, course and enrollment, group). each test
-// has the doc's test id in its name. they run on the course 1 sample data,
-// students 101 to 108 (figure 1), on the in memory store. they run in the mock
-// project in vitest.config.mts, so ci runs them too even though it has a
-// database. the store is reset before every test, so each one starts from the
-// sample data like the doc says.
-//
-// screen tests (USER-1 to 3, TUT-1 to 3, PROF-9, PROF-10, BLK-2, BLK-6, CRS-4,
-// GRP-6, GRP-7) are checked by hand. CRS-5, CRS-6 and CRS-7 need the roster
-// import and are covered in enrollment/enrollment.service.test.ts and roster.test.ts.
+// functional doc 5.1 to 5.4 and 5.7, course 1 sample data, in memory
 
 const app = createApp();
 const CLIENT = { 'X-Requested-With': 'CaseStudy' };
@@ -240,9 +230,7 @@ describe.skipIf(!config.useMockData)('functional testing doc, sections 5.1 to 5.
       expect(notOnIt.body.error.reason).toBe('NOT_ENROLLED');
     });
 
-    // the doc also adds 101 to course 2 through the roster import and reads the
-    // profile again. the import needs a database, so that step is in
-    // enrollment.service.test.ts
+    // the roster import step needs a database, see enrollment.service.test.ts
     it('CRS-2: the roster is checked on every course route', async () => {
       const routes = ['profile', 'candidates', 'requests', 'group'];
       for (const route of routes) {

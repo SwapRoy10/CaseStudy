@@ -10,16 +10,14 @@ export const signInBody = z.object({
   password: z.string().min(1),
 });
 
-// checked when the email has no account, so that answer takes about as long as
-// a wrong password and nobody can tell which emails exist from the timing
+// checked for unknown emails so the timing matches a wrong password
 let fakeHash: Promise<string> | undefined;
 function getFakeHash() {
   fakeHash ??= hashPassword('not-a-real-password');
   return fakeHash;
 }
 
-// POST /api/session
-// a wrong email and a wrong password get the same message on purpose (sdd 9.3)
+// post /api/session, same message for a wrong email or password (sdd 9.3)
 export async function signIn(_req: Request, res: Response) {
   const { email, password } = res.locals.body as z.infer<typeof signInBody>;
 
@@ -33,7 +31,7 @@ export async function signIn(_req: Request, res: Response) {
   res.json({ studentId: account.id, tutorialCompleted: account.tutorialCompleted });
 }
 
-// puts the session cookie on the response. the demo sign in uses it too.
+// sets the session cookie, the demo sign in uses it too
 export function startSession(res: Response, studentId: string) {
   res.cookie(COOKIE_NAME, createToken(studentId), {
     ...cookieOptions,
@@ -41,9 +39,7 @@ export function startSession(res: Response, studentId: string) {
   });
 }
 
-// DELETE /api/session
-// only clears the cookie in the browser. a token someone copied stays valid
-// until it expires, which is the trade the sdd makes for stateless sessions.
+// delete /api/session, clears the cookie only (token lives until it expires)
 export function signOut(_req: Request, res: Response) {
   res.clearCookie(COOKIE_NAME, cookieOptions);
   res.status(204).end();

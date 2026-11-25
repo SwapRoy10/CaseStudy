@@ -6,8 +6,7 @@ import * as mock from './mockAccounts';
 import * as postgres from './postgresAccounts';
 import { hashPassword, verifyPassword } from './password';
 
-// both account sources have to give the same answers. the in memory one always
-// runs, the postgres one only when there is a seeded database (npm run db:up)
+// memory and postgres accounts must agree, postgres only runs with a db (db:up)
 
 const sources = [
   { name: 'in memory sample data', source: mock, skip: false },
@@ -70,7 +69,7 @@ describe.each(sources)('accounts from $name', ({ source, skip }) => {
     });
 
     it('leaves out past semesters', async () => {
-      // 1001 is on csds 393 (Fall 2026) and was in csds 132 and 233 last spring
+      // 1001 is on csds 393 (fall 2026) and was in csds 132 and 233 last spring
       const me = await source.getMe('1001');
       expect(me?.courses.map((c) => c.code)).toEqual(['CSDS 393']);
     });

@@ -11,7 +11,7 @@ type State =
 export function CandidatesPage({ studentId, courseId, studentName }: { studentId: Id; courseId: Id; studentName: string }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  // the card whose request is being sent or canceled, and any problem with that
+  // card whose request is in flight, and any problem with it
   const [busyId, setBusyId] = useState<Id | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -19,15 +19,13 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
     let cancelled = false;
     setState({ kind: 'loading' });
 
-    // the requests are only used to show which cards already have one. if they
-    // can't load (no database in the mock demo) the list still shows.
+    // requests only mark cards that have one, list still shows if they fail to load
     Promise.all([api.getCandidates(courseId), api.getRequests(courseId).catch(() => ({ requests: [] }))])
       .then(([res, reqs]) => !cancelled && setState({ kind: 'ready', candidates: res.candidates, requests: reqs.requests }))
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof ApiRequestError) {
-          // CONFLICT messages (e.g. NO_PROFILE) are written for the user.
-          // network or server problems are worth retrying, conflicts aren't.
+          // CONFLICT messages are worded for the user, network problems are worth a retry
           const retryable = ['NETWORK', 'UNAVAILABLE', 'RATE_LIMITED'].includes(err.code);
           setState({ kind: 'error', message: err.message, retryable });
         } else {
@@ -40,12 +38,12 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
     };
   }, [studentId, courseId, attempt]);
 
-  // the newest request between you and a candidate comes first in the list
+  // newest request per candidate comes first
   function latestRequest(requests: RequestRecord[], candidateId: Id) {
     return requests.find((r) => r.requesterId === candidateId || r.recipientId === candidateId);
   }
 
-  // swaps one request in the list so the card changes without reloading everything
+  // swap one request in the list so the card updates without a reload
   function updateRequest(updated: RequestRecord) {
     setState((current) => {
       if (current.kind !== 'ready') return current;
@@ -126,8 +124,7 @@ export function CandidatesPage({ studentId, courseId, studentName }: { studentId
   );
 }
 
-// srs ud-1: tell students how the list is put together. same order as the
-// matching code in backend/src/matching/pipeline.ts
+// srs ud-1: explains the list order (matches matching/pipeline.ts)
 function HowMatchingWorks() {
   return (
     <details className="rules">

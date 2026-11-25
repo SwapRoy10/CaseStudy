@@ -10,21 +10,19 @@ const ARROWS: Record<string, [number, number]> = {
   ArrowUp: [0, -1],
   ArrowDown: [0, 1],
 };
-// the grid opens at 8 am. 16 is the row height in index.css
+// grid opens at 8 am, 16 is the row height in index.css
 const FIRST_SLOT_SHOWN = 16;
 const ROW_HEIGHT = 16;
 
 const clamp = (n: number, low: number, high: number) => Math.min(Math.max(n, low), high);
 
-// the student's own weekly free time. drag to mark it, drag over marked time to
-// clear it. arrow keys move, space marks or clears, shift with an arrow keeps
-// going. it only ever shows the signed in student's own times
+// own weekly free time: drag to mark or clear, arrows move, space toggles
 export function AvailabilityGrid({ cells, onChange, compact }: { cells: Cells; onChange: (cells: Cells) => void; compact?: boolean }) {
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
   const latest = useRef(cells);
   latest.current = cells;
-  // what a drag is painting, or null when no drag is going on
+  // what a drag paints, null when no drag
   const painting = useRef<boolean | null>(null);
   const touch = useRef(false);
   const keyMoved = useRef(false);
@@ -43,7 +41,7 @@ export function AvailabilityGrid({ cells, onChange, compact }: { cells: Cells; o
     };
   }, []);
 
-  // keep the cursor in view when the arrow keys move it off the visible rows
+  // scroll the cursor into view when arrows move it off screen
   useEffect(() => {
     if (!keyMoved.current) return;
     keyMoved.current = false;
@@ -75,7 +73,7 @@ export function AvailabilityGrid({ cells, onChange, compact }: { cells: Cells; o
   }
 
   function handlePointerOver(e: PointerEvent) {
-    // the button was let go outside the window, so the drag is over
+    // button let go outside the window, drag is over
     if (e.buttons === 0) painting.current = null;
     const cell = cellUnder(e);
     if (painting.current === null || cell === null) return;
@@ -83,7 +81,7 @@ export function AvailabilityGrid({ cells, onChange, compact }: { cells: Cells; o
     moveTo(cell);
   }
 
-  // a finger drag scrolls the grid, so on touch a tap marks or clears one half hour
+  // finger drag scrolls the grid, so on touch a tap toggles one half hour
   function handleClick(e: { target: EventTarget }) {
     const cell = cellUnder(e);
     if (!touch.current || cell === null) return;

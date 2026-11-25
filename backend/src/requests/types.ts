@@ -11,8 +11,7 @@ export interface RequestRecord {
   status: RequestStatus;
   requestedAt: string;
   respondedAt: string | null;
-  // the other student's limited summary (PR-1), worked out from the caller's side.
-  // null when they no longer pass the matching filters. no name or email.
+  // other student's limited summary (PR-1), null if no longer a match
   other?: CandidateSummary | null;
 }
 

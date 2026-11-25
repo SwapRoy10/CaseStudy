@@ -3,9 +3,7 @@ import pino from 'pino';
 import { pinoHttp } from 'pino-http';
 import { config } from '../config';
 
-// structured logging, adapted from the template's pino-logger. differences:
-// logs go to stdout (not a file) so they show up in the `npm run dev` / demo
-// terminal, and tests are silent by default.
+// pino logging adapted from the template, logs to stdout and tests are silent
 
 export const logger = pino({
   level: config.logLevel,
@@ -13,31 +11,30 @@ export const logger = pino({
     config.env === 'development'
       ? {
           target: 'pino-pretty',
-          // one line per request in the dev terminal, production keeps full json
+          // one line per request in dev, production keeps full json
           options: { colorize: true, translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,req,res,responseTime' },
         }
       : undefined,
-  // never write credentials to logs
+  // keep credentials out of logs
   redact: {
     paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-operator-key"]', '*.password', '*.token'],
     censor: '[REDACTED]',
   },
 });
 
-// express rewrites req.url inside mounted routers (/api is stripped), so log originalUrl
+// express strips /api inside mounted routers, so log originalUrl
 const fullUrl = (req: { url?: string; originalUrl?: string }) => req.originalUrl ?? req.url;
 
-// one log line per request with a request id, and attaches req.log for handlers.
+// one log line per request with an id, also sets req.log
 export const requestLogger = pinoHttp({
   logger,
-  // reuse the caller's id if they sent one, and send it back in the response, so a
-  // failed request in the browser can be matched to its exact line in the server log
+  // reuse the caller's id and send it back, so errors map to a log line
   genReqId: (req, res) => {
     const id = (req.headers['x-request-id'] as string | undefined) ?? randomUUID();
     res.setHeader('X-Request-Id', id);
     return id;
   },
-  // health checks run every 10s from the frontend, so don't drown the terminal
+  // skip health checks, the frontend hits them every 10s
   autoLogging: { ignore: (req) => req.url === '/api/health' },
   customSuccessMessage: (req, res, ms) => `${req.method} ${fullUrl(req)} ${res.statusCode} ${Math.round(ms)}ms`,
   customErrorMessage: (req, res) => `${req.method} ${fullUrl(req)} ${res.statusCode} failed`,

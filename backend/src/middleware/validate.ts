@@ -2,12 +2,7 @@ import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import { ApiError } from './errorHandler';
 
-// request validation with zod, adapted from the template's validateRequest.
-// validates params, query and/or body before the controller runs, and passes the
-// first problem to errorHandler as a 400 VALIDATION in our standard error shape.
-//
-//   router.put('/courses/:courseId/profile',
-//     validate({ params: courseParams, body: profileBody }), saveProfile);
+// zod validation from the template, first problem goes to errorHandler as 400
 
 type Schemas = { params?: z.ZodType; query?: z.ZodType; body?: z.ZodType };
 
@@ -19,7 +14,7 @@ export function validate(schemas: Schemas): RequestHandler {
 
       const result = schema.safeParse(req[part]);
       if (!result.success) {
-        // report one problem at a time, that's enough for the user to fix and resend
+        // one problem at a time is enough to fix and resend
         const issue = result.error.issues[0];
         const where = issue.path.length ? `${issue.path.join('.')}: ` : '';
         next(new ApiError(400, 'VALIDATION', `${where}${issue.message}`));
@@ -32,6 +27,6 @@ export function validate(schemas: Schemas): RequestHandler {
   };
 }
 
-// shared pieces. ids are postgres bigints sent as strings (see matching/types.ts).
+// shared pieces, ids are bigints sent as strings (see matching/types.ts)
 export const idString = z.string().regex(/^\d+$/, 'must be a numeric id');
 export const courseParams = z.object({ courseId: idString });

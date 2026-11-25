@@ -4,16 +4,14 @@ import type { GroupView, Id, RequestRecord } from '../types/api';
 import { MatchedProfile } from '../components/MatchedProfile';
 import { ReviewForm } from '../components/ReviewForm';
 
-// your confirmed group in this course (sdd 6.1). you can see a member's full
-// profile once you have an accepted request with them, and you can review anyone
-// in the group.
+// confirmed group for this course (sdd 6.1), profiles and reviews per member
 export function GroupPage({ studentId, courseId }: { studentId: Id; courseId: Id }) {
   const [group, setGroup] = useState<GroupView | null>(null);
   const [requests, setRequests] = useState<RequestRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // which member's profile or review form is open
+  // member whose profile or review form is open
   const [profileOf, setProfileOf] = useState<Id | null>(null);
   const [reviewOf, setReviewOf] = useState<Id | null>(null);
 
@@ -32,7 +30,7 @@ export function GroupPage({ studentId, courseId }: { studentId: Id; courseId: Id
       .finally(() => setLoading(false));
   }, [courseId]);
 
-  // true if you and this member have an accepted request, in either direction
+  // accepted request with this member, either direction
   function isMatched(memberId: Id) {
     return requests.some(
       (r) =>
@@ -41,7 +39,7 @@ export function GroupPage({ studentId, courseId }: { studentId: Id; courseId: Id
     );
   }
 
-  // the review was saved, so mark that member as reviewed without reloading
+  // mark the member reviewed without a reload
   function markReviewed(memberId: Id) {
     setGroup((current) =>
       current

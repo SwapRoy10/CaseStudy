@@ -3,8 +3,7 @@ import request from 'supertest';
 import { createApp } from '../app';
 import { COOKIE_NAME } from '../auth/sessionToken';
 
-// the demo sign in is how someone picks a name from the demo roster and gets a
-// session without a password. it has to work for the demo and be gone in production.
+// demo sign in: pick a name from the roster, no password, off in production
 
 const CLIENT = { 'X-Requested-With': 'CaseStudy' };
 const app = createApp();
@@ -77,7 +76,7 @@ describe('in production', () => {
     expect(res.status).toBe(401);
     expect(res.headers['set-cookie']).toBeUndefined();
 
-    // even signed in, they are simply not there
+    // even signed in, they are not there
     const { createToken } = await import('../auth/sessionToken.js');
     const cookie = `${COOKIE_NAME}=${createToken('101')}`;
     expect((await request(prod).get('/api/demo/roster').set('Cookie', cookie)).status).toBe(404);

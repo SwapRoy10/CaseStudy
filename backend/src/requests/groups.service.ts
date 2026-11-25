@@ -5,13 +5,11 @@ import { getOwnProfile } from '../profile/profile.service';
 import { REVIEW_CRITERIA } from '../reviews/criteria';
 import { GroupView } from './types';
 
-// the student's confirmed group in a course (sdd 6.3.9), or null if they're not in one.
-// it lists who is in it, which of them the student has already reviewed, and the
-// criteria the review form needs.
+// the student's group in a course (sdd 6.3.9), null if none
 export async function getGroup(studentId: bigint, courseIdRaw: string): Promise<GroupView | null> {
   const courseId = toId(courseIdRaw, 'courseId');
 
-  // every course-scoped route checks the roster first (test plan 4.3, GRP-5)
+  // roster check first (test plan 4.3, GRP-5)
   const enrolled = await prisma.enrollment.findFirst({ where: { studentId, courseId }, select: { studentId: true } });
   if (!enrolled) throw new StateConflictError('NOT_ENROLLED');
 
@@ -21,7 +19,7 @@ export async function getGroup(studentId: bigint, courseIdRaw: string): Promise<
       group: { include: { members: { include: { student: { select: { name: true } } }, orderBy: { studentId: 'asc' } } } },
     },
   });
-  if (!membership) return null;
+  if (!membership) return null; // not in a group
 
   const reviewed = await prisma.peerReview.findMany({
     where: { reviewerId: studentId, groupId: membership.groupId },
@@ -42,9 +40,7 @@ export async function getGroup(studentId: bigint, courseIdRaw: string): Promise<
   };
 }
 
-// someone's full profile, but only if you have an accepted request with them in
-// this course (sdd 6.3.10, PR-2). the check runs on every call, and an id you
-// aren't matched with gets a 403 whether or not that student exists.
+// full profile of an accepted match (sdd 6.3.10, PR-2), 403 for anyone else
 export async function getMatchedProfile(studentId: bigint, courseIdRaw: string, otherIdRaw: string) {
   const courseId = toId(courseIdRaw, 'courseId');
   const otherId = toId(otherIdRaw, 'studentId');
@@ -60,7 +56,7 @@ export async function getMatchedProfile(studentId: bigint, courseIdRaw: string, 
     },
     select: { id: true },
   });
-  if (!accepted) throw new ForbiddenError();
+  if (!accepted) throw new ForbiddenError(); // not matched
 
   const profile = toOwnProfile(await getOwnProfile(otherId, courseId));
   if (!profile) throw new ForbiddenError();

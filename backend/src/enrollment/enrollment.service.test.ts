@@ -36,9 +36,7 @@ describe.skipIf(!process.env.DATABASE_URL)('importRoster', () => {
     expect(await prisma.enrollment.count({ where: { courseId } })).toBe(2);
   });
 
-  // a canvas gradebook export, like the one in database/sample-canvas-roster.csv.
-  // these get their own course and @case.edu students, so the login id turns into
-  // an email with the real default domain
+  // canvas export like database/sample-canvas-roster.csv
   describe('canvas gradebook export', () => {
     const canvasHeader = 'Student,ID,SIS User ID,SIS Login ID,Section,Assignment 1';
     let canvasCourse: bigint;

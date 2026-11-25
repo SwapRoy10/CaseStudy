@@ -1,4 +1,4 @@
-// mirrors backend/src/matching/types.ts. keep the two in sync when the api changes.
+// mirrors backend/src/matching/types.ts, keep both in sync
 
 export type Id = string;
 export type GradeGoal = 'A_TRACK' | 'PASS_TRACK';
@@ -24,13 +24,12 @@ export interface CandidatesResponse {
   candidates: CandidateSummary[];
 }
 
-// every backend error has this body (backend/src/middleware/errorHandler.ts)
+// body of every backend error (backend/src/middleware/errorHandler.ts)
 export interface ApiErrorBody {
   error: { code: string; message: string; reason?: string; fields?: string[] };
 }
 
-// from GET /api/courses (backend/src/courses/listCourses.ts). every course this
-// term, whether or not the student is on its roster
+// from get /api/courses (backend/src/courses/listCourses.ts), enrolled or not
 export interface CourseSummary {
   courseId: Id;
   code: string;
@@ -39,7 +38,7 @@ export interface CourseSummary {
   term: string;
 }
 
-// from GET /api/me (backend/src/auth/types.ts)
+// from get /api/me (backend/src/auth/types.ts)
 export interface MyCourse {
   id: Id;
   code: string;
@@ -58,8 +57,7 @@ export interface Me {
 
 export type RequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELED';
 
-// from backend/src/requests/types.ts. other is the limited summary of the other
-// student, or null if they don't match any more. no names before a match.
+// from backend/src/requests/types.ts, other is null if they no longer match
 export interface RequestRecord {
   requestId: Id;
   courseId: Id;
@@ -85,8 +83,7 @@ export interface GroupView {
   criteria: string[];
 }
 
-// reviewAverage is null until somebody has rated them. GET /profile gives null
-// instead of this when nothing is saved yet
+// reviewAverage is null until rated, get /profile gives null if nothing saved
 export interface OwnProfile {
   courseId: Id;
   name: string;
@@ -97,7 +94,7 @@ export interface OwnProfile {
   reviewAverage: number | null;
 }
 
-// a matched student's full profile, only after an accepted request
+// full profile of a match, only after an accepted request
 export interface MatchedProfile extends OwnProfile {
   studentId: Id;
 }
@@ -113,8 +110,7 @@ export interface ReviewRating {
   rating: number;
 }
 
-// demo only, from GET /api/demo/roster (backend/src/controllers/demo.controller.ts).
-// it only exists outside production, so the picker on the sign in page hides when it's gone
+// demo only, from get /api/demo/roster (missing in production)
 export interface DemoStudent {
   id: Id;
   name: string;

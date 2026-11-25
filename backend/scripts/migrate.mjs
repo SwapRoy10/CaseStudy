@@ -1,6 +1,4 @@
-// runs prisma migrate deploy. prisma wants DIRECT_URL set (see the datasource in
-// schema.prisma), but for a local database it's the same as DATABASE_URL, so fall
-// back to that instead of making everyone add a second line to .env.
+// runs prisma migrate deploy, DIRECT_URL falls back to DATABASE_URL
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 

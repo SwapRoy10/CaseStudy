@@ -13,7 +13,7 @@ const CLIENT = { 'X-Requested-With': 'CaseStudy' };
 const signIn = (app: ReturnType<typeof createApp>, email: string, password: string) =>
   request(app).post('/api/session').set(CLIENT).send({ email, password });
 
-// pulls the session cookie out of a sign in response, the way a browser keeps it
+// pulls the session cookie out of a sign in response
 function sessionCookie(res: request.Response): string {
   const header = (res.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith(`${COOKIE_NAME}=`))!;
   return header.split(';')[0];
@@ -169,9 +169,7 @@ describe('PUT /api/me/password', () => {
   const app = createApp();
   const CLIENT_HEADER = { 'X-Requested-With': 'CaseStudy' };
 
-  // this changes a password, so with a database it gets a student of its own (the
-  // seed resets the sample students while other test files run). with no
-  // database the sample students live in memory, so one that no other test uses is fine.
+  // changes a password, so with a db it needs its own student
   let email = 'bxc102@case.edu';
   let studentId = '102';
 

@@ -7,9 +7,7 @@ import { prisma } from './db';
 import { REVIEW_CRITERIA } from './reviews/criteria';
 import { makeClass } from './requests/testUtils';
 
-// the whole flow over http: browse, send a request, answer it, see the group,
-// the full profile, and review each other. the services have their own tests,
-// these check the routes, the status codes and the error bodies.
+// whole flow over http, checks the routes, status codes and error bodies
 
 const app = createApp();
 const CLIENT = { 'X-Requested-With': 'CaseStudy' };

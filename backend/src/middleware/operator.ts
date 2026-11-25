@@ -3,12 +3,9 @@ import type { RequestHandler } from 'express';
 import { config } from '../config';
 import { ApiError } from './errorHandler';
 
-// roster import is for the team operator, not for students (sdd 9.5). the
-// operator sends the key from OPERATOR_KEY in an X-Operator-Key header. a student
-// session doesn't count, so a signed in student gets the same 403 as anyone else.
+// roster import is operator only (sdd 9.5), key in the X-Operator-Key header
 
-// hashing both first makes them the same length, which timingSafeEqual needs,
-// and means the comparison time doesn't depend on how much of the key matched
+// hash both so lengths match for timingSafeEqual and timing leaks nothing
 function sameKey(a: string, b: string) {
   const digest = (s: string) => createHash('sha256').update(s).digest();
   return timingSafeEqual(digest(a), digest(b));
@@ -16,7 +13,7 @@ function sameKey(a: string, b: string) {
 
 export const requireOperator: RequestHandler = (req, _res, next) => {
   const given = req.header('x-operator-key');
-  // with no key configured the import is off, not open to everyone
+  // no key configured means import is off, not open
   if (!config.operatorKey || !given || !sameKey(config.operatorKey, given)) {
     next(new ApiError(403, 'FORBIDDEN', 'You are not allowed to do that.'));
     return;

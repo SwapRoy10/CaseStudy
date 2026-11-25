@@ -1,5 +1,4 @@
-// shared data types from sdd section 6.2.
-// ids are strings so bigint values from postgres don't get rounded by js numbers.
+// shared types from sdd 6.2, string ids so bigints don't get rounded
 
 export type Id = string;
 
@@ -7,15 +6,14 @@ export type GradeGoal = 'A_TRACK' | 'PASS_TRACK';
 
 export type WorkStyle = 'SOLO' | 'GROUP';
 
-// one recurring weekly interval. weekday is 0-6 (0 = sunday),
-// minutes are from midnight in America/New_York, 0 <= start < end <= 1440.
+// weekday 0 to 6 (0 sunday), minutes from midnight, America/New_York
 export interface AvailabilityBlock {
   weekday: number;
   startMinute: number;
   endMinute: number;
 }
 
-// a saved course profile (sdd 5.1). matching only ever reads these.
+// saved course profile (sdd 5.1), matching only reads these
 export interface Profile {
   profileId: Id;
   studentId: Id;
@@ -25,8 +23,7 @@ export interface Profile {
   blocks: AvailabilityBlock[];
 }
 
-// the limited summary shown before a match (PR-1, Request.LimitedView).
-// no name, email or full availability grid on purpose.
+// limited summary before a match (PR-1, Request.LimitedView), no name or email
 export interface CandidateSummary {
   candidateId: Id;
   gradeGoal: GradeGoal;

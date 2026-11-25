@@ -1,11 +1,8 @@
 #!/usr/bin/env node
-// integration smoke test. it talks to the frontend server, so a pass proves the
-// page is served and /api requests reach the backend through the proxy.
-//
+// smoke test through the frontend server, checks the page and /api
 //   node scripts/smoke.mjs                         # dev servers (npm run dev)
 //   node scripts/smoke.mjs http://localhost:4173   # demo build (npm run demo)
-//
-// waits up to 60s for the servers to come up, then exits 0 (pass) or 1 (fail).
+// waits up to 60s for the servers, exits 0 on pass and 1 on fail
 
 const base = (process.argv[2] ?? 'http://localhost:5173').replace(/\/$/, '');
 const deadline = Date.now() + 60_000;
@@ -23,7 +20,7 @@ async function waitForServer() {
   }
 }
 
-// signs in like the browser does and keeps the session cookie for later calls
+// sign in like the browser and keep the session cookie
 const DEMO_PASSWORD = 'casestudy123';
 async function signIn(email, password = DEMO_PASSWORD) {
   const res = await fetch(`${base}/api/session`, {

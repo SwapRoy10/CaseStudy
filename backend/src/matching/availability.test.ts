@@ -16,8 +16,7 @@ describe('isValidBlock', () => {
     expect(isValidBlock(block(1, 23, 25))).toBe(false); // past midnight
   });
 
-  // the exact edges from sdd 5.1. mutation testing showed nothing checked these:
-  // saturday (6) is the last real day, and a block can't start before midnight
+  // edges from sdd 5.1: saturday (6) is the last day, no start before midnight
   it('accepts saturday and rejects a start before midnight', () => {
     expect(isValidBlock(block(6, 9, 10))).toBe(true);
     expect(isValidBlock({ weekday: 1, startMinute: -30, endMinute: 60 })).toBe(false);

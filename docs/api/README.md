@@ -95,8 +95,8 @@ For the team operator, not students (SDD 6.5). It needs the `X-Operator-Key` hea
 
 The body is the roster file, sent as `text/csv`. It can be either of these:
 
-* **A Canvas gradebook export.** Canvas has no roster export of its own, so this is the one most people use: in the course go to Grades, then Export, then Export Entire Gradebook. It has the columns `Student, ID, SIS User ID, SIS Login ID, Section`, then one column per assignment. The school email is the `SIS Login ID` (the case id) plus `@case.edu`. The "Points Possible" row, the "Manual Posting" row and "Test Student" are skipped, and so are the assignment columns. If a file has an `Email` column instead, that is used as is. `SCHOOL_EMAIL_DOMAIN` in `.env` changes the domain.
-* **The SDD format.** The columns `course_code, section, term, school_email`. Every row has to match the course in the url.
+* A Canvas gradebook export. Canvas has no roster export of its own, so this is the one most people use: in the course go to Grades, then Export, then Export Entire Gradebook. It has the columns `Student, ID, SIS User ID, SIS Login ID, Section`, then one column per assignment. The school email is the `SIS Login ID` (the case id) plus `@case.edu`. The "Points Possible" row, the "Manual Posting" row and "Test Student" are skipped, and so are the assignment columns. If a file has an `Email` column instead, that is used as is. `SCHOOL_EMAIL_DOMAIN` in `.env` changes the domain.
+* The SDD format. The columns `course_code, section, term, school_email`. Every row has to match the course in the url.
 
 Excel can open the file and save it as CSV, but an `.xlsx` file isn't read, it has to be CSV.
 
@@ -126,7 +126,7 @@ The whole file is checked before anything is saved. If any row can't be used, no
 
 The reasons are `no login id`, `no account for that email` and `row is for a different course`. A file with no login or email column at all gets `400` with `fields: ["header"]`, and an empty file gets `fields: ["file"]`. An unknown course gets `409`.
 
-**Accounts.** By default a student who has no account fails the row (`no account for that email`), since the SDD has no sign up. Add `?createAccounts=true` to make an account for each of those students instead. Each gets a random 10 character first password, which comes back once in the answer and is only saved hashed:
+Accounts: by default a student who has no account fails the row (`no account for that email`), since the SDD has no sign up. Add `?createAccounts=true` to make an account for each of those students instead. Each gets a random 10 character first password, which comes back once in the answer and is only saved hashed:
 
 ```json
 {
@@ -258,6 +258,6 @@ Signed in. Ranked study-partner candidates for the signed-in student in this cou
 }
 ```
 
-`weekday` is 0–6 (Sunday = 0); minutes are from midnight, America/New_York. `reviewAverage` is `null` when the candidate has no reviews.
+`weekday` is 0 to 6 (Sunday is 0); minutes are from midnight, America/New_York. `reviewAverage` is `null` when the candidate has no reviews.
 
 Errors: `409 NO_PROFILE` if the student has no profile or no availability for the course.

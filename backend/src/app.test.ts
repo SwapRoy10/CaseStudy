@@ -44,8 +44,7 @@ describe('GET /api/courses/:courseId/candidates', () => {
     expect(res.status).toBe(200);
     expect(res.body.courseId).toBe('1');
     const ids = res.body.candidates.map((c: { candidateId: string }) => c.candidateId);
-    // 102 has the most overlap with 101, 103 and 106 tie on 1 block.
-    // 104 (other grade goal), 105 (no overlap), 107 (no availability) are filtered out.
+    // 102 overlaps most, 103 and 106 tie on 1 block, 104 105 107 filtered out
     expect(ids[0]).toBe('102');
     expect([...ids].sort()).toEqual(['102', '103', '106']);
   });
@@ -185,9 +184,7 @@ describe('unknown routes and bad bodies', () => {
   });
 });
 
-// profile and enrollment throw the error classes from src/errors.ts. their routes
-// aren't wired up yet, so this mounts a tiny app with the real error handler to
-// make sure those errors come back as 400 and 409 and not as a 503
+// errors.ts classes through the real handler give 400 and 409, not 503
 describe('errors from the profile and enrollment modules', () => {
   const mini = express();
   mini.get('/missing-field', () => {

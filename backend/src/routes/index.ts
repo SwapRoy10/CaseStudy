@@ -15,21 +15,18 @@ import { requireOperator } from '../middleware/operator';
 import { requireClientHeader, requireStudent } from '../middleware/session';
 import { courseParams, validate } from '../middleware/validate';
 
-// all api routes, mounted at /api in app.ts.
-// add new modules here: one line per endpoint, logic goes in a controller.
+// all api routes, mounted at /api in app.ts, logic lives in the controllers
 export const apiRouter = Router();
 
 // public
 apiRouter.get('/health', getHealth);
 
-// demo only, lets the frontend pick a student until everyone has their own login
+// demo only, pick a student without a login
 if (config.demoRoutes) {
   apiRouter.get('/demo/roster', getDemoRoster);
 }
 
-// the team operator, with their own key instead of a student session. the key
-// is checked before the file is read. canvas exports are text/csv, and excel on
-// windows sometimes labels a csv application/vnd.ms-excel, so both are accepted.
+// operator route, key checked first (excel may label csv as vnd.ms-excel)
 apiRouter.post(
   '/operator/courses/:courseId/roster',
   requireOperator,
@@ -38,19 +35,18 @@ apiRouter.post(
   importRosterFile
 );
 
-// everything below uses the session cookie, so a change has to carry the
-// client header that other sites can't add
+// below here changes must carry the client header
 apiRouter.use(requireClientHeader);
 
 apiRouter.post('/session', validate({ body: signInBody }), signIn);
 apiRouter.delete('/session', signOut);
 
-// demo only, signs you in as the student picked from the roster above
+// demo only, sign in as the picked student
 if (config.demoRoutes) {
   apiRouter.post('/demo/session', validate({ body: demoSignInBody }), demoSignIn);
 }
 
-// everything below needs a signed-in student
+// below here needs a signed in student
 apiRouter.use(requireStudent);
 
 apiRouter.get('/me', getCurrentStudent);

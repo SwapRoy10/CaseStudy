@@ -1,6 +1,6 @@
-# CaseStudy React frontend
+# CaseStudy frontend
 
-React 19 + Vite + TypeScript.
+React 19, Vite, TypeScript.
 
 ```bash
 npm install
@@ -10,9 +10,7 @@ npm test        # unit tests for the availability grid logic
 
 ## Talking to the backend
 
-- Call the backend only through `src/services/api.ts`. Add one function per endpoint there.
-- In dev, requests to `/api/...` are proxied to `http://localhost:4000` (see `vite.config.ts`), so there's no CORS setup.
-- Failed calls throw `ApiRequestError` with `code`, `reason` and a user-facing `message`. `code: 'NETWORK'` means the backend couldn't be reached.
-- Response types live in `src/types/api.ts` and mirror `backend/src/matching/types.ts`.
-
-The current page and styles are a working integration shell, ready to be redesigned.
+- call the backend only through `src/services/api.ts`, one function per endpoint
+- in dev `/api/...` is proxied to `http://localhost:4000` (see `vite.config.ts`), so no cors setup
+- failed calls throw `ApiRequestError` with `code`, `reason` and a `message` for the user. `code: 'NETWORK'` means the backend was unreachable
+- response types live in `src/types/api.ts`, mirroring `backend/src/matching/types.ts`
