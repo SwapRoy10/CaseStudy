@@ -8,8 +8,7 @@ export function SignInPage({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // the demo roster is only there outside production. if the call fails the
-  // picker just isn't shown and the password form is all you get.
+  // demo roster is outside production only, picker hides if the call fails
   const [roster, setRoster] = useState<DemoCourse[]>([]);
   const [demoCourseId, setDemoCourseId] = useState('');
   const [demoStudentId, setDemoStudentId] = useState('');
@@ -19,14 +18,14 @@ export function SignInPage({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
       .getDemoRoster()
       .then((res) => {
         setRoster(res.courses);
-        // start in csds 393 since that's the real class
+        // start in csds 393, the real class
         const start = res.courses.find((c) => c.code === 'CSDS 393') ?? res.courses[0];
         if (start) pickCourse(start);
       })
       .catch(() => setRoster([]));
   }, []);
 
-  // switching course also switches to someone on that roster who has a profile
+  // new course picks someone on that roster who has a profile
   function pickCourse(course: DemoCourse) {
     setDemoCourseId(course.id);
     const first = course.students.find((s) => s.hasProfile) ?? course.students[0];
@@ -54,7 +53,7 @@ export function SignInPage({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
       await api.signIn(email, password);
       onSignedIn(await api.getMe());
     } catch (err) {
-      // the backend words these for the student, like "Email or password is incorrect."
+      // backend words these for the student
       setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.');
     } finally {
       setBusy(false);

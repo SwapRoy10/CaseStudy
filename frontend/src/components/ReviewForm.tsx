@@ -6,19 +6,18 @@ interface Props {
   groupId: Id;
   member: GroupMember;
   criteria: string[];
-  // called after a review is saved, so the group screen can show it as reviewed
+  // runs after a review is saved so the group screen marks it reviewed
   onReviewed: (studentId: Id) => void;
 }
 
-// rate one groupmate on every criterion from 1 to 5 (srs review.scale). every
-// one has to be rated before it can be sent, and after that the form is read only.
+// rate one groupmate 1 to 5 on each criterion (srs review.scale)
 export function ReviewForm({ groupId, member, criteria, onReviewed }: Props) {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [average, setAverage] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const allRated = criteria.every((c) => ratings[c] !== undefined);
+  const allRated = criteria.every((c) => ratings[c] !== undefined); // send stays off until all are rated
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

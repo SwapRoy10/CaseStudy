@@ -6,8 +6,7 @@ import type { Cells } from '../availability';
 import { AvailabilityGrid } from './AvailabilityGrid';
 import { GOAL_LABEL, STYLE_LABEL, interval } from './CandidateCard';
 
-// first time walkthrough (srs ud-2) and the help button reopens it. everything
-// here is made up and stays on this screen, the only call is completeTutorial
+// first time walkthrough (srs ud-2), help button reopens it, all data made up
 
 const block = (weekday: number, from: number, to: number) => ({ weekday, startMinute: from * 60, endMinute: to * 60 });
 
@@ -18,12 +17,12 @@ const classmates = [
   { gradeGoal: 'A_TRACK' as GradeGoal, workStyle: 'GROUP' as WorkStyle, cells: toCells([block(5, 15, 17)]) },
 ];
 
-// the same rules as the real matching, in the same order
+// same rules and order as the real matching
 function practiceMatches(gradeGoal: GradeGoal, workStyle: WorkStyle, cells: Cells) {
-  const sameGoal = classmates.filter((c) => c.gradeGoal === gradeGoal);
+  const sameGoal = classmates.filter((c) => c.gradeGoal === gradeGoal); // goal has to match
   const withShared = sameGoal
     .map((c) => ({ ...c, shared: toBlocks(sharedCells(cells, c.cells)) }))
-    .filter((c) => c.shared.length > 0);
+    .filter((c) => c.shared.length > 0); // needs shared time
   withShared.sort((a, b) => b.shared.length - a.shared.length || Number(b.workStyle === workStyle) - Number(a.workStyle === workStyle));
   return { shown: withShared, hidden: classmates.length - withShared.length };
 }
@@ -36,11 +35,11 @@ export function TutorialDialog({ onDone, replay }: { onDone: () => void; replay?
   const [sent, setSent] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
 
-  // keyboard users start inside the pop up, and escape leaves it
+  // keyboard users start inside the pop up
   useEffect(() => dialog.current?.focus(), []);
 
   async function close() {
-    // if this call fails the pop up just shows again next time, so don't block on it
+    // if this fails the pop up shows again next time, so don't block
     if (!replay) await api.completeTutorial().catch(() => null);
     onDone();
   }

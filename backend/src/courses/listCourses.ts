@@ -3,8 +3,7 @@ import { prisma } from '../db';
 import { courses as sampleCourses } from '../sampleData';
 import { latestTerm } from './terms';
 
-// sdd 6.3.1. a course as the class selector shows it. being listed doesn't mean
-// the student is on its roster, saving a profile checks that.
+// sdd 6.3.1, a course as the selector shows it
 export interface CourseSummary {
   courseId: string;
   code: string;
@@ -21,13 +20,12 @@ async function allCourses(): Promise<CourseSummary[]> {
   return rows.map((c) => ({ courseId: c.id.toString(), code: c.code, title: c.title, section: c.section, term: c.term }));
 }
 
-// the newest term any course is in, "Fall 2026" right now. null if there are none
+// newest term of any course, null if there are none
 export async function currentTerm(): Promise<string | null> {
   return latestTerm((await allCourses()).map((c) => c.term));
 }
 
-// only this term's courses. old semesters stay in the database for their groups
-// and reviews but don't belong in a selector
+// current term only, old terms stay in the db for their groups and reviews
 export async function listCourses(): Promise<CourseSummary[]> {
   const courses = await allCourses();
   const term = latestTerm(courses.map((c) => c.term));

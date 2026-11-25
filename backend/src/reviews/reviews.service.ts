@@ -5,7 +5,7 @@ import { ForbiddenError, StateConflictError, ValidationError, toId } from '../er
 import { lockEnrollments } from '../enrollment/lock';
 import { REVIEW_CRITERIA } from './criteria';
 
-// peer reviews (sdd 5.3, 6.3.11). the reviewer is always the signed in student.
+// peer reviews (sdd 5.3, 6.3.11), the reviewer is the signed in student
 
 export const reviewInputSchema = z.object({
   revieweeId: z.string().regex(/^\d+$/),
@@ -23,31 +23,31 @@ export async function submitReview(reviewerId: bigint, groupIdRaw: string, input
   const revieweeId = BigInt(parsed.data.revieweeId);
   const { ratings } = parsed.data;
 
-  // one rating for every criterion, no more and no less (Review.Scale)
+  // exactly one rating per criterion (Review.Scale)
   const names = ratings.map((r) => r.criteriaName);
   const exact = names.length === REVIEW_CRITERIA.length && REVIEW_CRITERIA.every((c) => names.includes(c));
   if (!exact) throw new ValidationError(['ratings']);
 
-  if (revieweeId === reviewerId) throw new ForbiddenError();
+  if (revieweeId === reviewerId) throw new ForbiddenError(); // no self reviews
 
-  // a group that doesn't exist is the same as one you're not in
+  // a missing group looks the same as one you're not in
   const group = await prisma.studyGroup.findUnique({ where: { id: groupId } });
   if (!group) throw new ForbiddenError();
 
   const [first, second] = reviewerId < revieweeId ? [reviewerId, revieweeId] : [revieweeId, reviewerId];
   try {
     return await prisma.$transaction(async (tx) => {
-      // both students are locked, then membership is checked as it is right now
+      // lock both students, then check membership as it is now
       if (!(await lockEnrollments(tx, group.courseId, first, second))) throw new ForbiddenError();
       const members = await tx.groupMembership.count({
         where: { groupId, studentId: { in: [reviewerId, revieweeId] } },
       });
-      if (members < 2) throw new ForbiddenError();
+      if (members < 2) throw new ForbiddenError(); // both must be in the group
 
       const already = await tx.peerReview.findUnique({
         where: { reviewerId_revieweeId_groupId: { reviewerId, revieweeId, groupId } },
       });
-      if (already) throw new StateConflictError('DUPLICATE_REVIEW');
+      if (already) throw new StateConflictError('DUPLICATE_REVIEW'); // one review per pair per group
 
       const review = await tx.peerReview.create({
         data: { reviewerId, revieweeId, groupId, ratings: { create: ratings } },
@@ -60,7 +60,7 @@ export async function submitReview(reviewerId: bigint, groupIdRaw: string, input
       return { reviewId: review.id.toString(), revieweeAverage: avg._avg.rating as number };
     });
   } catch (err) {
-    // the reviewer, reviewee and group key catches two submits at the same moment
+    // the reviewer, reviewee and group key catches two submits at once
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new StateConflictError('DUPLICATE_REVIEW');
     }

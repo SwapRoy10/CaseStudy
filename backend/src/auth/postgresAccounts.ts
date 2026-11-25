@@ -2,11 +2,10 @@ import { currentTerm } from '../courses/listCourses';
 import { prisma } from '../db';
 import { Account, Me } from './types';
 
-// postgres reads for sign in. ids are bigint in the database but strings
-// everywhere else, so they get converted here.
+// postgres reads for sign in, bigint ids become strings here
 
 export async function findAccountByEmail(email: string): Promise<Account | null> {
-  // emails are saved however the roster spelled them, so compare without case
+  // roster spelling varies, so ignore case
   const row = await prisma.student.findFirst({ where: { schoolEmail: { equals: email, mode: 'insensitive' } } });
   return row && toAccount(row);
 }
@@ -44,7 +43,7 @@ export async function getMe(studentId: string): Promise<Me | null> {
     },
   });
   if (!row) return null;
-  // only this term's courses, past semesters are just there for old groups and reviews
+  // current term only, old terms are just for past groups and reviews
   const term = await currentTerm();
   return {
     studentId: row.id.toString(),

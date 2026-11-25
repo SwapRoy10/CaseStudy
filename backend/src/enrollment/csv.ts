@@ -1,8 +1,6 @@
-// reads csv text into rows of cells. canvas puts names like "Rivera, Alex" in
-// quotes, so splitting on commas isn't enough: a comma inside quotes belongs to
-// the cell, and a doubled quote ("") inside quotes is one quote character.
+// csv text to rows of cells, handles quoted commas like "Rivera, Alex"
 export function parseCsv(text: string): string[][] {
-  // excel saves a byte order mark at the start of the file, drop it
+  // drop the byte order mark excel adds
   const input = text.replace(/^﻿/, '');
 
   const rows: string[][] = [];
@@ -15,7 +13,7 @@ export function parseCsv(text: string): string[][] {
 
     if (inQuotes) {
       if (ch === '"' && input[i + 1] === '"') {
-        cell += '"';
+        cell += '"'; // doubled quote is one quote character
         i++;
       } else if (ch === '"') {
         inQuotes = false;
@@ -25,10 +23,10 @@ export function parseCsv(text: string): string[][] {
     } else if (ch === '"') {
       inQuotes = true;
     } else if (ch === ',') {
-      row.push(cell);
+      row.push(cell); // comma outside quotes ends the cell
       cell = '';
     } else if (ch === '\n' || ch === '\r') {
-      // \r\n counts as one line break
+      // \r\n is one line break
       if (ch === '\r' && input[i + 1] === '\n') i++;
       row.push(cell);
       rows.push(row);
@@ -39,12 +37,12 @@ export function parseCsv(text: string): string[][] {
     }
   }
 
-  // the last line may not end with a line break
+  // last line may have no line break
   if (cell !== '' || row.length > 0) {
     row.push(cell);
     rows.push(row);
   }
 
-  // blank lines are kept so a row's position here is its row number in the sheet
+  // blank lines stay so the index matches the sheet row number
   return rows;
 }

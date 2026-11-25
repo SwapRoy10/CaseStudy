@@ -27,7 +27,7 @@ describe.skipIf(config.useMockData)('profile routes', () => {
   let course: string;
   let ids: bigint[];
   let cleanup: () => Promise<void>;
-  // 0 has no profile yet, 1 is a classmate who is A track and free on monday morning
+  // 0 has no profile, 1 is a classmate, a track, free monday morning
   const [me, mate] = [0, 1];
 
   beforeAll(async () => {
@@ -167,7 +167,7 @@ describe.skipIf(config.useMockData)('profile routes', () => {
 });
 
 describe('first time tutorial', () => {
-  // this changes a flag that stays saved, so with a database it gets a student of its own
+  // changes a saved flag, so with a database it gets its own student
   let studentId = '1035';
   beforeAll(async () => {
     if (config.useMockData) return;

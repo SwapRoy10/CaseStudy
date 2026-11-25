@@ -6,7 +6,7 @@ import { students } from '../sampleData';
 import { getOwnProfile } from './profiles';
 import { isEnrolled, store } from './store';
 
-// the same two functions as requests/groups.service.ts, on the in memory store
+// same two functions as requests/groups.service.ts, on the in memory store
 
 export async function getGroup(studentId: bigint, courseIdRaw: string): Promise<GroupView | null> {
   const courseId = toId(courseIdRaw, 'courseId').toString();
@@ -17,6 +17,7 @@ export async function getGroup(studentId: bigint, courseIdRaw: string): Promise<
   if (!membership) return null;
   const group = store.groups.find((g) => g.id === membership.groupId)!;
 
+  // who this student already reviewed in the group
   const reviewed = new Set(store.reviews.filter((r) => r.reviewerId === me && r.groupId === group.id).map((r) => r.revieweeId));
   const members = store.memberships
     .filter((m) => m.groupId === group.id)
@@ -41,7 +42,7 @@ export async function getMatchedProfile(studentId: bigint, courseIdRaw: string, 
       r.status === 'ACCEPTED' &&
       ((r.requesterId === me && r.recipientId === otherId) || (r.requesterId === otherId && r.recipientId === me))
   );
-  if (!accepted) throw new ForbiddenError();
+  if (!accepted) throw new ForbiddenError(); // only matched students can see each other
 
   const profile = toOwnProfile(await getOwnProfile(BigInt(otherId), courseId));
   if (!profile) throw new ForbiddenError();

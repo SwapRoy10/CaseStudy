@@ -6,9 +6,7 @@ import * as mock from './mockData';
 import { block, ids, profile } from './testUtils';
 import { Profile } from './types';
 
-// matching test cases from the functional testing doc (section 5.5) that weren't
-// covered anywhere else yet. the comment above each test says which case it is,
-// so it's easy to check them off. times are in hours, so 9.5 means 9:30
+// functional doc 5.5 cases not covered elsewhere, times in hours so 9.5 is 9:30
 
 vi.mock('./data', async () => {
   const real = await import('./mockData.js');
@@ -152,8 +150,7 @@ describe('random tie break', () => {
 
   // rand-2 in the functional testing doc
   it('the same random numbers always give the same order', () => {
-    // worked out by hand from the shuffle in stages.ts:
-    // always 0 swaps every time, always 0.99 never swaps
+    // from the shuffle in stages.ts: rng 0 swaps every time, 0.99 never swaps
     const low = () => 0;
     const high = () => 0.99;
     expect(ids(rankCandidates(me, [ana, ben, cal], low))).toEqual(['ben', 'cal', 'ana']);
@@ -176,7 +173,7 @@ describe('random tie break', () => {
       expect(list[4]).toBe('eve');
       expect(list.slice(1, 4).sort()).toEqual(['ben', 'cal', 'dee']);
     }
-    // more than one order is expected. only one would mean the shuffle isn't running
+    // more than one order expected, one would mean no shuffle
     expect(counts.size).toBeGreaterThan(1);
   });
 });

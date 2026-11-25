@@ -3,7 +3,7 @@ import { api } from '../services/api';
 
 type Status = 'checking' | 'up' | 'down';
 
-// small indicator that the frontend can actually reach the backend.
+// shows if the frontend can reach the backend
 export function ConnectionStatus() {
   const [status, setStatus] = useState<Status>('checking');
 

@@ -7,8 +7,7 @@ const KEY = vi.hoisted(() => {
   return 'test-operator-key-1234';
 });
 
-// the database part is tested in enrollment.service.test.ts. here importRoster
-// is faked so these tests are only about who can call the route and what comes back
+// db part is in enrollment.service.test.ts, importRoster is faked here
 const imported = vi.hoisted(() => ({
   result: { ok: true as boolean, added: 2, total: 3, rows: [] as unknown[], accounts: [] as unknown[] },
   calls: [] as unknown[][],

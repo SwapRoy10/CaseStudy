@@ -5,9 +5,7 @@ import { submitReview } from '../storage';
 
 export const groupParams = z.object({ groupId: idString });
 
-// POST /api/groups/:groupId/reviews
-// the body is checked in the service, so a missing rating comes back as a
-// VALIDATION error that names the field
+// post /api/groups/:groupId/reviews, the service checks the body
 export async function postReview(req: Request, res: Response) {
   const { groupId } = res.locals.params as { groupId: string };
   res.status(201).json(await submitReview(BigInt(res.locals.studentId), groupId, req.body));

@@ -8,11 +8,7 @@ import * as postgresGroups from './requests/groups.service';
 import * as postgresRequests from './requests/requests.service';
 import * as postgresReviews from './reviews/reviews.service';
 
-// profile saves, requests, groups and reviews go through this file. they use the
-// postgres services when a database is configured and the in memory store
-// otherwise, so the demo works on a laptop with no database. matching reads the
-// same store through matching/data.ts. the two versions follow the same rules and
-// throw the same errors.
+// postgres services when a database is set, else the in memory store
 const memory = config.useMockData;
 
 export const getOwnProfile = memory ? memoryProfiles.getOwnProfile : postgresProfiles.getOwnProfile;

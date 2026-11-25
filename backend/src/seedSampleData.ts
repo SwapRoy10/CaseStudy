@@ -3,12 +3,7 @@ import { hashPassword, verifyPassword } from './auth/password';
 import { REVIEW_CRITERIA } from './reviews/criteria';
 import { DEMO_PASSWORD, courses, enrollments, pastGroups, profiles, reviews, students } from './sampleData';
 
-// the seed saves rows under fixed ids, so on a database that has other people's
-// rows it could overwrite them. this looks first and stops if an id is taken by
-// something that isn't sample data. a sample student has the sample email, or
-// else the demo password (or the placeholder older seeds used), so anyone else
-// stands out. a sample student who changed their password still has their email.
-// set SEED_FORCE=true to skip the check.
+// stop if a fixed id is taken by real data (SEED_FORCE=true skips this)
 const OLD_PLACEHOLDER = 'seed-placeholder-not-a-real-hash';
 
 async function checkNothingIsOverwritten(prisma: PrismaClient) {
@@ -19,7 +14,7 @@ async function checkNothingIsOverwritten(prisma: PrismaClient) {
     select: { id: true, schoolEmail: true, passwordHash: true },
   });
 
-  // every sample student shares one hash, so this is usually a single check
+  // sample students share one hash, so this is usually one check
   const checked = new Set<string>();
   for (const row of taken) {
     const sample = students.find((s) => s.id === row.id.toString());
@@ -31,7 +26,7 @@ async function checkNothingIsOverwritten(prisma: PrismaClient) {
     checked.add(row.passwordHash);
   }
 
-  // a course at one of our ids that has real students on it
+  // one of our course ids with real students on it
   const sampleIds = new Set(students.map((s) => BigInt(s.id)));
   const enrolled = await prisma.enrollment.findMany({
     where: { courseId: { in: courses.map((c) => BigInt(c.id)) } },
@@ -43,16 +38,13 @@ async function checkNothingIsOverwritten(prisma: PrismaClient) {
   }
 }
 
-// writes everything in sampleData.ts into postgres. safe to run more than once:
-// it puts the sample rows back the way the file says and leaves anything else alone.
-// prisma/seed.ts calls this, and so do the database tests before they run.
+// writes sampleData.ts into postgres, safe to rerun (resets sample rows only)
 export async function seedSampleData(prisma: PrismaClient) {
   const groupIds = pastGroups.map((g) => BigInt(g.id));
   const studentIds = students.map((s) => BigInt(s.id));
   const courseIds = courses.map((c) => BigInt(c.id));
 
-  // hashed up front, the transaction below has a time limit. every sample
-  // student shares the one hash, they all sign in with the same demo password.
+  // hash before the transaction, it has a time limit (one hash for all)
   const passwordHash = await hashPassword(DEMO_PASSWORD);
 
   await checkNothingIsOverwritten(prisma);
@@ -105,7 +97,7 @@ export async function seedSampleData(prisma: PrismaClient) {
           revieweeId: BigInt(r.revieweeId),
           groupId: BigInt(r.groupId),
           ratings: {
-            // sampleData has the three ratings in the same order as the criteria
+            // same order as REVIEW_CRITERIA
             create: [r.communication, r.reliability, r.contribution].map((rating, i) => ({
               criteriaName: REVIEW_CRITERIA[i],
               rating,
@@ -115,11 +107,7 @@ export async function seedSampleData(prisma: PrismaClient) {
       });
     }
 
-    // we picked the ids ourselves above, so move each id counter past them.
-    // otherwise the next normal insert would try to reuse id 1 and fail.
-    // only ever move it forward: if something else is adding rows while the seed
-    // runs, it may already have taken an id higher than any saved row, and
-    // moving the counter back would hand that id out twice
+    // ids were set by hand, so move each counter past them (forward only)
     for (const table of ['student', 'course', 'study_group']) {
       await tx.$executeRawUnsafe(
         `SELECT setval('${table}_id_seq', GREATEST((SELECT MAX(id) FROM ${table}), (SELECT last_value FROM ${table}_id_seq)))`

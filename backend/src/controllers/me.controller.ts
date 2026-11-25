@@ -4,12 +4,10 @@ import { findAccountById, getMe, markTutorialComplete, setPasswordHash } from '.
 import { hashPassword, verifyPassword } from '../auth/password';
 import { ApiError } from '../middleware/errorHandler';
 
-// GET /api/me
-// who the session belongs to and which courses they're on the roster of. the
-// frontend calls this on load to find out if someone is already signed in.
+// get /api/me, who is signed in and their courses
 export async function getCurrentStudent(_req: Request, res: Response) {
   const me = await getMe(res.locals.studentId);
-  // a valid token for a student who no longer exists is the same as no session
+  // token for a deleted student counts as no session
   if (!me) throw new ApiError(401, 'UNAUTHENTICATED', 'Sign in to continue.');
   res.json(me);
 }
@@ -19,9 +17,7 @@ export const passwordBody = z.object({
   newPassword: z.string().min(8, 'must be at least 8 characters').max(128),
 });
 
-// PUT /api/me/password
-// accounts made by a roster import start with a random password, so students
-// need a way to pick their own
+// put /api/me/password, roster import accounts start with a random one
 export async function changePassword(_req: Request, res: Response) {
   const { currentPassword, newPassword } = res.locals.body as z.infer<typeof passwordBody>;
 
@@ -39,8 +35,7 @@ export async function changePassword(_req: Request, res: Response) {
   res.status(204).end();
 }
 
-// POST /api/me/tutorial-complete
-// so the first time tutorial doesn't open again (UD-2)
+// post /api/me/tutorial-complete, stops the tutorial reopening (ud-2)
 export async function completeTutorial(_req: Request, res: Response) {
   await markTutorialComplete(res.locals.studentId);
   res.status(204).end();

@@ -8,20 +8,14 @@ import { REVIEW_CRITERIA } from '../reviews/criteria';
 import { getCourseProfiles, getAverages } from '../matching/mockData';
 import { averageFor, resetStore, store } from './store';
 
-// the in memory version of profiles, requests, groups and reviews. it has to give
-// the same answers as the postgres services, so these follow the same cases as
-// their tests. no database is used, so they run everywhere.
-//
-// course 1 from the testing doc: 101, 102 and 103 are A track and 101 shares time
-// with both. 105, 107 and 108 are on the roster but 105 is free on friday only,
-// 107 has no free time and 108 has no profile.
+// in memory profiles, requests, groups and reviews, same cases as postgres
 
 const goodProfile = { gradeGoal: 'A_TRACK', workStyle: 'GROUP', blocks: [{ weekday: 1, startMinute: 540, endMinute: 660 }] };
 const rate = (rating: number) => REVIEW_CRITERIA.map((criteriaName) => ({ criteriaName, rating }));
 
 beforeEach(() => resetStore());
 
-// gives the students in the list the same monday morning so they all match each other
+// gives every listed student the same monday morning so they all match
 async function allMatch(ids: string[]) {
   for (const id of ids) await saveProfile(BigInt(id), '1', goodProfile);
 }
@@ -325,7 +319,7 @@ describe('groups and matched profiles', () => {
       { studentId: '101', name: 'Alex Rivera', reviewedByMe: false },
       { studentId: '102', name: 'Brianna Cole', reviewedByMe: false },
     ]);
-    await expect(getGroup(101n, '2')).rejects.toThrow('NOT_ENROLLED'); // GRP-5
+    await expect(getGroup(101n, '2')).rejects.toThrow('NOT_ENROLLED'); // grp-5
   });
 
   it('shows the full profile with the email after an accepted request, from either side', async () => {

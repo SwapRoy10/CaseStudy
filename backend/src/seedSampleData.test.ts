@@ -9,8 +9,7 @@ it('has no review average for a student who has received no ratings', () => {
   expect(reviewAverage('108')).toBeNull();
 });
 
-// the seed already ran once in globalSetup.ts. these run it again to make sure
-// it really is safe to rerun, since the readme tells people to do exactly that
+// seed already ran in globalSetup.ts, rerun it to check it is safe to repeat
 
 describe.skipIf(config.useMockData)('seedSampleData', () => {
   afterAll(async () => {
@@ -42,9 +41,7 @@ describe.skipIf(config.useMockData)('seedSampleData', () => {
     await prisma.student.delete({ where: { id: s.id } });
   });
 
-  // this one used to fail now and then when the 200 student test was adding
-  // students at the same moment. it takes an id the way a running insert would,
-  // before that insert has saved its row, then reseeds
+  // flaky before: takes an id like an unsaved insert would, then reseeds
   it('never hands out an id that something else already took while it ran', async () => {
     const [{ taken }] = await prisma.$queryRaw<{ taken: bigint }[]>`SELECT nextval('student_id_seq') AS taken`;
     await seedSampleData(prisma);
@@ -56,8 +53,7 @@ describe.skipIf(config.useMockData)('seedSampleData', () => {
     await prisma.student.delete({ where: { id: s.id } });
   });
 
-  // the seed uses fixed ids, so on a shared database it must not replace rows that
-  // belong to someone else
+  // fixed ids in the seed must not replace rows that belong to someone else
   describe('on a database with other people in it', () => {
     it('stops when a sample student id belongs to a real account', async () => {
       const before = await prisma.student.findUniqueOrThrow({ where: { id: 999n } });

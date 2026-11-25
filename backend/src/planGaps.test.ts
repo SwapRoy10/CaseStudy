@@ -9,8 +9,7 @@ import { prisma } from './db';
 import { REVIEW_CRITERIA } from './reviews/criteria';
 import { makeClass, match } from './requests/testUtils';
 
-// test plan cases from 5.6 to 5.8 that the other test files don't check yet.
-// each test name starts with its id in the functional testing doc.
+// plan cases 5.6 to 5.8 the other files skip, each name starts with its doc id
 
 const app = createApp();
 const CLIENT = { 'X-Requested-With': 'CaseStudy' };
@@ -30,12 +29,9 @@ function keysIn(value: unknown, out = new Set<string>()): Set<string> {
 }
 
 describe.skipIf(config.useMockData)('test plan cases not covered elsewhere', () => {
-  // class one: me, plus three classmates who share 3, 2 and 1 availability
-  // blocks with me, so the candidate order is fixed (Match.Rank.Overlap counts
-  // blocks) and no tie is broken at random.
-  // class two: a second course nobody from class one is on.
+  // class one: me and 3 classmates sharing 3, 2, 1 blocks (Match.Rank.Overlap)
   let course: string;
-  let otherCourse: string;
+  let otherCourse: string; // class two, nobody from class one
   let ids: bigint[];
   const cleanups: (() => Promise<void>)[] = [];
   const [me, most, middle, least] = [0, 1, 2, 3];

@@ -9,20 +9,14 @@ export interface BadRow {
   reason: string;
 }
 
-// an account made during an import, with the first password to hand to the student
+// account made during an import, with its first password
 export interface CreatedAccount {
   email: string;
   name: string;
   password: string;
 }
 
-// puts the students in a roster file on one course's roster. the whole file is
-// checked before anything is written, so one bad row means nothing changes.
-// the file can be the sdd format or a canvas gradebook export (see rosterFile.ts).
-// a failed import says why each row failed, which is what the api sends back.
-// with createAccounts, a student who has no account yet gets one made with a random
-// first password instead of the row failing (there's no sign up, so this is how
-// accounts get made). the passwords come back once and are never saved in plain text.
+// adds a roster file's students to a course, all or nothing
 export async function importRosterWithReasons(
   courseIdRaw: string | bigint,
   text: string,
@@ -35,7 +29,7 @@ export async function importRosterWithReasons(
   const rows = parseRosterFile(text, config.schoolEmailDomain);
   if (rows.length === 0) throw new ValidationError(['file']);
 
-  // emails are compared without case, so one typed in capitals still finds its account
+  // case insensitive so capitals still find the account
   const emails = [...new Set(rows.map((r) => r.email).filter(Boolean))];
   const students = await prisma.student.findMany({
     where: { OR: emails.map((e) => ({ schoolEmail: { equals: e, mode: 'insensitive' as const } })) },
@@ -43,8 +37,8 @@ export async function importRosterWithReasons(
   });
   const idByEmail = new Map(students.map((s) => [s.schoolEmail.toLowerCase(), s.id]));
 
-  const badRows: BadRow[] = [];
-  const toCreate = new Map<string, string>(); // email -> name
+  const badRows: BadRow[] = []; // problems found, checked before any write
+  const toCreate = new Map<string, string>(); // email to name
   for (const r of rows) {
     if (r.problem) badRows.push({ row: r.row, reason: r.problem });
     else if (!idByEmail.has(r.email) && options.createAccounts) toCreate.set(r.email, r.name ?? r.email.split('@')[0]);
@@ -55,7 +49,7 @@ export async function importRosterWithReasons(
   }
   if (badRows.length) return { ok: false as const, rows: badRows };
 
-  // hashing is slow on purpose, so it's done before the transaction starts
+  // hash before the transaction, it's slow on purpose
   const accounts: CreatedAccount[] = [...toCreate].map(([email, name]) => ({ email, name, password: generatePassword() }));
   const hashes = await Promise.all(accounts.map((a) => hashPassword(a.password)));
 
@@ -71,7 +65,7 @@ export async function importRosterWithReasons(
       made.forEach((s) => idByEmail.set(s.schoolEmail.toLowerCase(), s.id));
     }
 
-    // a student listed twice is still one enrollment
+    // listed twice is still one enrollment
     const studentIds = [...new Set(rows.map((r) => idByEmail.get(r.email)!))];
     const enrolled = await tx.enrollment.createMany({
       data: studentIds.map((studentId) => ({ studentId, courseId })),
@@ -82,8 +76,7 @@ export async function importRosterWithReasons(
   return { ok: true as const, ...result, accounts };
 }
 
-// the same import with the original answer shape: a failed import is just the row
-// numbers that were bad. kept as it was so existing callers and tests don't change.
+// same import, old answer shape (bad row numbers only)
 export async function importRoster(courseIdRaw: string | bigint, text: string) {
   const result = await importRosterWithReasons(courseIdRaw, text);
   return result.ok ? result : { ok: false as const, badRows: result.rows.map((r) => r.row) };

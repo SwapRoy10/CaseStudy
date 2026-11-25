@@ -7,11 +7,7 @@ import { startSession } from './session.controller';
 
 export const demoSignInBody = z.object({ studentId: idString });
 
-// POST /api/demo/session
-// demo only, the partner of GET /api/demo/roster: pick a student from that list
-// and you're signed in as them, with no password. it's off in production (see
-// routes/index.ts), so real students always sign in with a password. delete it
-// along with the roster route once the demo is over.
+// post /api/demo/session, demo only, sign in from the roster, no password
 export async function demoSignIn(_req: Request, res: Response) {
   const { studentId } = res.locals.body as z.infer<typeof demoSignInBody>;
 

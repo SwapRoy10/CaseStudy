@@ -12,28 +12,28 @@ import { SignInPage } from './pages/SignInPage';
 
 export default function App() {
   const [me, setMe] = useState<Me | null>(null);
-  // every course this term, for the selector. the student may not be on all of them
+  // every course this term for the selector, student may not be on all
   const [courses, setCourses] = useState<CourseSummary[]>([]);
-  // true until the first answer from /api/me, so the sign in screen doesn't flash
+  // true until /api/me answers, so sign in doesn't flash
   const [checking, setChecking] = useState(true);
   const [startError, setStartError] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<Id>('');
   const [helpOpen, setHelpOpen] = useState(false);
   const [page, setPage] = useState<'matches' | 'requests' | 'group' | 'profile' | 'account'>('matches');
 
-  // a 401 from any call means the session ended, so go back to the sign in screen
+  // a 401 from any call means the session ended
   useEffect(() => {
     setSignedOutHandler(() => setMe(null));
     return () => setSignedOutHandler(null);
   }, []);
 
-  // someone may already be signed in, since the cookie survives a page reload
+  // cookie survives a reload, so someone may already be signed in
   useEffect(() => {
     api
       .getMe()
       .then(start)
       .catch((err: unknown) => {
-        // 401 just means nobody is signed in yet, anything else is a real problem
+        // 401 just means nobody is signed in
         if (!(err instanceof ApiRequestError) || err.status !== 401) {
           setStartError(err instanceof Error ? err.message : 'Something went wrong.');
         }
@@ -42,7 +42,7 @@ export default function App() {
   }, []);
 
   async function start(student: Me) {
-    // if the list can't load, fall back to the courses the student is on
+    // list failed, fall back to the student's own courses
     const list = await api
       .getCourses()
       .then((r) => r.courses)
@@ -51,7 +51,7 @@ export default function App() {
     setMe(student);
     setHelpOpen(false);
     setPage('matches');
-    // start in csds 393 since that's the real class, or any course they are on
+    // start in csds 393, or any course they are on
     const first = student.courses.find((c) => c.code === 'CSDS 393') ?? student.courses[0];
     setCourseId(first ? first.id : (list[0]?.courseId ?? ''));
   }

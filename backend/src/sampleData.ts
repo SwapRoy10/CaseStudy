@@ -1,13 +1,6 @@
 import { AvailabilityBlock, GradeGoal, WorkStyle } from './matching/types';
 
-// every student, course and review we load for local dev and the demo.
-// prisma/seed.ts writes this into postgres, and matching/mockData.ts reads it
-// straight from here when there's no database, so both always match.
-//
-// courses 1 and 2 are the sample data from the functional testing doc (5.5.1,
-// figure 1). a lot of tests depend on them exactly, so don't change them.
-// course 3 is the real class, csds 393, with a full roster.
-// names and emails are made up. nothing in the app ever sends email.
+// sample data for the seed and demo, courses 1 and 2 are fixed for tests
 
 export interface SampleCourse {
   id: string;
@@ -43,12 +36,12 @@ export interface SampleReview {
 // weekdays the same way the database stores them, 0 is sunday
 const SUN = 0, MON = 1, TUE = 2, WED = 3, THU = 4, FRI = 5, SAT = 6;
 
-// takes hours so schedules are easy to read, 13.5 means 1:30pm
+// takes hours, 13.5 means 1:30pm
 function h(weekday: number, start: number, end: number): AvailabilityBlock {
   return { weekday, startMinute: Math.round(start * 60), endMinute: Math.round(end * 60) };
 }
 
-// every sample student signs in with this. it's fake data, never use it for real accounts.
+// every sample student signs in with this, fake data only
 export const DEMO_PASSWORD = 'casestudy123';
 
 export const SAMPLE_COURSE = '1';
@@ -59,7 +52,7 @@ export const courses: SampleCourse[] = [
   { id: '1', code: 'SAMPLE 101', title: 'Sample Course (testing doc data)', section: '001', term: 'Fall 2026' },
   { id: '2', code: 'SAMPLE 102', title: 'Second Sample Course', section: '001', term: 'Fall 2026' },
   { id: '3', code: 'CSDS 393', title: 'Software Engineering', section: '100', term: 'Fall 2026' },
-  // past semester, only here so students have peer reviews from earlier groups
+  // past semester, only here for old peer reviews
   { id: '4', code: 'CSDS 132', title: 'Introduction to Programming in Java', section: '100', term: 'Spring 2026' },
   { id: '5', code: 'CSDS 233', title: 'Introduction to Data Structures', section: '100', term: 'Spring 2026' },
 ];
@@ -124,15 +117,13 @@ export const profiles: SampleProfile[] = [
   { studentId: '104', courseId: '1', gradeGoal: 'PASS_TRACK', workStyle: 'GROUP', blocks: [h(MON, 9, 11)] },
   { studentId: '105', courseId: '1', gradeGoal: 'A_TRACK', workStyle: 'GROUP', blocks: [h(FRI, 10, 12)] },
   { studentId: '106', courseId: '1', gradeGoal: 'A_TRACK', workStyle: 'GROUP', blocks: [h(WED, 13, 14)] },
-  // on purpose: a saved profile with no free time, which a normal save would refuse.
-  // POOL-2 uses it to check that path
+  // no free time on purpose, a normal save would refuse this (POOL-2 uses it)
   { studentId: '107', courseId: '1', gradeGoal: 'A_TRACK', workStyle: 'SOLO', blocks: [] },
 
   // course 2, only for the cross-course checks. 501 has the same profile as 102
   { studentId: '501', courseId: '2', gradeGoal: 'A_TRACK', workStyle: 'GROUP', blocks: [h(MON, 10, 12), h(WED, 14, 16)] },
 
-  // csds 393. most people have a couple of afternoon slots between classes and
-  // some evening or weekend time, like a real schedule would look
+  // csds 393, afternoon slots plus some evening or weekend time
   { studentId: '1001', courseId: '3', gradeGoal: 'A_TRACK', workStyle: 'GROUP', blocks: [h(MON, 14, 16), h(WED, 14, 16), h(SUN, 13, 16)] },
   { studentId: '1002', courseId: '3', gradeGoal: 'A_TRACK', workStyle: 'GROUP', blocks: [h(MON, 15, 17), h(THU, 19, 21), h(SUN, 14, 17)] },
   { studentId: '1003', courseId: '3', gradeGoal: 'A_TRACK', workStyle: 'SOLO', blocks: [h(TUE, 10, 11.5), h(THU, 10, 11.5), h(SAT, 10, 12)] },
@@ -170,7 +161,7 @@ export const profiles: SampleProfile[] = [
   // 1035 and 1036 are on the roster but haven't made a profile yet
 ];
 
-// groups from last semester. a student can only be in one group per course
+// last semester's groups, one group per student per course
 export const pastGroups: { id: string; courseId: string; members: string[] }[] = [
   // gives 102 and 103 the review averages the testing doc expects (3.2 and 4.9)
   { id: '1', courseId: '4', members: ['102', '103', '1001', '1002', '1003', '1004', '1005', '1006', '1007', '1008', '1009', '1010'] },
@@ -180,8 +171,7 @@ export const pastGroups: { id: string; courseId: string; members: string[] }[] =
   { id: '5', courseId: '5', members: ['1009', '1013', '1021', '1025'] },
 ];
 
-// who is on which roster. everyone with a profile or a past group is enrolled,
-// plus a few people who joined but haven't made a profile
+// rosters, profile and past group students plus a few with no profile yet
 export const enrollments: { studentId: string; courseId: string }[] = [
   ...profiles.map((p) => ({ studentId: p.studentId, courseId: p.courseId })),
   ...pastGroups.flatMap((g) => g.members.map((m) => ({ studentId: m, courseId: g.courseId }))),
@@ -191,8 +181,7 @@ export const enrollments: { studentId: string; courseId: string }[] = [
   { studentId: '1036', courseId: '3' },
 ];
 
-// what each student got from every groupmate in csds 233, as
-// [communication, reliability, contribution]. people not listed have no reviews yet
+// ratings per csds 233 groupmate: [communication, reliability, contribution]
 const ratingsFromGroupmates: Record<string, [number, number, number]> = {
   '1001': [5, 5, 4], '1003': [5, 4, 5], '1011': [4, 4, 4], '1014': [3, 4, 3],
   '1002': [4, 3, 4], '1008': [2, 3, 3], '1016': [5, 5, 5], '1020': [4, 4, 5],
@@ -231,8 +220,7 @@ function buildReviews(): SampleReview[] {
 
 export const reviews: SampleReview[] = buildReviews();
 
-// average over every rating a student has received, null if none.
-// same math as the sql in matching/postgresData.ts
+// average of ratings received, null if none (same math as postgresData.ts)
 export function reviewAverage(studentId: string): number | null {
   const mine = reviews.filter((r) => r.revieweeId === studentId);
   if (mine.length === 0) return null;

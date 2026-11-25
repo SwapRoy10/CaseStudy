@@ -1,7 +1,4 @@
-// sdd 10.3: modules throw typed errors and the api layer maps them to an
-// ApiError + http status. a failed db read just throws, and the api layer
-// turns that into UNAVAILABLE.
-// full reason list from sdd 10.3 so other modules can reuse this, matching only uses NO_PROFILE.
+// sdd 10.3, typed errors the api layer maps to a status
 
 export type ConflictReason =
   | 'NOT_ENROLLED'

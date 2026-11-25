@@ -3,7 +3,7 @@ import { REVIEW_CRITERIA } from '../reviews/criteria';
 import { reviewInputSchema } from '../reviews/reviews.service';
 import { averageFor, isEnrolled, store } from './store';
 
-// the same function as reviews/reviews.service.ts, on the in memory store
+// same function as reviews/reviews.service.ts, on the in memory store
 
 export async function submitReview(reviewerId: bigint, groupIdRaw: string, input: unknown) {
   const groupId = toId(groupIdRaw, 'groupId').toString();
@@ -22,7 +22,7 @@ export async function submitReview(reviewerId: bigint, groupIdRaw: string, input
   const exact = names.length === REVIEW_CRITERIA.length && REVIEW_CRITERIA.every((c) => names.includes(c));
   if (!exact) throw new ValidationError(['ratings']);
 
-  if (reviewee === reviewer) throw new ForbiddenError();
+  if (reviewee === reviewer) throw new ForbiddenError(); // no self reviews
 
   const group = store.groups.find((g) => g.id === groupId);
   if (!group) throw new ForbiddenError();

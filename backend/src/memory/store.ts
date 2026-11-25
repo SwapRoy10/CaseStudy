@@ -2,9 +2,7 @@ import { REVIEW_CRITERIA } from '../reviews/criteria';
 import { enrollments, pastGroups, profiles as sampleProfiles, reviews as sampleReviews } from '../sampleData';
 import type { Profile } from '../matching/types';
 
-// the in memory version of the database for the demo with no DATABASE_URL. it
-// starts from sampleData.ts, the same rows the seed loads, and keeps whatever
-// students do (profile saves, requests, groups, reviews) until the server stops.
+// in memory database for the demo, starts from sampleData.ts, resets on restart
 
 export interface StoredRequest {
   id: number;
@@ -43,13 +41,13 @@ export const store = {
   groups: [] as StoredGroup[],
   memberships: [] as StoredMembership[],
   reviews: [] as StoredReview[],
-  // ids for new rows, picked up from where the sample data stops
+  // next ids, start after the sample data
   nextRequestId: 1,
   nextGroupId: 1,
   nextReviewId: 1,
 };
 
-// puts everything back the way sampleData.ts has it. the tests call this before each one
+// back to sampleData.ts, tests call this before each one
 export function resetStore() {
   store.profiles = sampleProfiles.map((p) => ({
     profileId: `${p.studentId}-${p.courseId}`,
@@ -71,7 +69,7 @@ export function resetStore() {
     reviewerId: r.reviewerId,
     revieweeId: r.revieweeId,
     groupId: r.groupId,
-    // sampleData has the three ratings in the same order as the criteria
+    // same order as REVIEW_CRITERIA
     ratings: [r.communication, r.reliability, r.contribution].map((rating, n) => ({ criteriaName: REVIEW_CRITERIA[n], rating })),
   }));
 
@@ -86,7 +84,7 @@ export function isEnrolled(studentId: string, courseId: string) {
   return store.enrollments.some((e) => e.studentId === studentId && e.courseId === courseId);
 }
 
-// average over every rating a student has received, null if none (Review.Average)
+// average of all ratings received, null if none (Review.Average)
 export function averageFor(studentId: string): number | null {
   const ratings = store.reviews.filter((r) => r.revieweeId === studentId).flatMap((r) => r.ratings);
   if (ratings.length === 0) return null;

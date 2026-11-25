@@ -1,8 +1,7 @@
 import type { AvailabilityBlock, GradeGoal, WorkStyle } from '../matching/types';
 import { getOwnProfile } from './profile.service';
 
-// OwnProfile from sdd 6.2. reviewAverage is a number, or null when nobody has
-// rated them yet, and the screen words that as "Not yet rated".
+// OwnProfile from sdd 6.2, reviewAverage is null until someone rates them
 export interface OwnProfile {
   courseId: string;
   name: string;
@@ -15,14 +14,13 @@ export interface OwnProfile {
 
 type Saved = Awaited<ReturnType<typeof getOwnProfile>>;
 
-// getOwnProfile gives the average as text ("3.2" or "Not yet rated") and has nulls
-// for a profile nobody saved. the api sends the sdd shape: null for no profile at all
+// turns getOwnProfile's text average and nulls into the sdd shape
 export function toOwnProfile(saved: Saved): OwnProfile | null {
-  if (saved.gradeGoal === null || saved.workStyle === null) return null;
+  if (saved.gradeGoal === null || saved.workStyle === null) return null; // nothing saved yet
   return {
     ...saved,
     gradeGoal: saved.gradeGoal,
     workStyle: saved.workStyle,
-    reviewAverage: saved.reviewAverage === 'Not yet rated' ? null : Number(saved.reviewAverage),
+    reviewAverage: saved.reviewAverage === 'Not yet rated' ? null : Number(saved.reviewAverage), // text to number
   };
 }

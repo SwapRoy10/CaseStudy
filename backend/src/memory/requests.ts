@@ -4,9 +4,7 @@ import type { Profile } from '../matching/types';
 import { RequestRecord } from '../requests/types';
 import { averageFor, isEnrolled, store, StoredRequest } from './store';
 
-// match requests on the in memory store, the same rules and the same errors as
-// requests/requests.service.ts. the server handles one request at a time here, so
-// there are no locks and nothing can happen between a check and the change.
+// requests on the in memory store, same rules as requests.service.ts, no locks
 
 function toRecord(r: StoredRequest): RequestRecord {
   return {
@@ -25,9 +23,7 @@ function completeProfile(studentId: string, courseId: string): Profile | undefin
   return store.profiles.find((p) => p.studentId === studentId && p.courseId === courseId && p.blocks.length > 0);
 }
 
-// the limited summary of the other student from this student's side, the same
-// fields as a candidate card. null if either has no complete profile or they no
-// longer pass the matching filters.
+// limited summary of the other student, null if no longer a match
 function summaryOf(me: string, otherId: string, courseId: string): RequestRecord['other'] {
   const mine = completeProfile(me, courseId);
   const theirs = completeProfile(otherId, courseId);
@@ -49,7 +45,7 @@ export async function sendRequest(studentId: bigint, courseIdRaw: string, recipi
   const recipientId = toId(recipientIdRaw, 'recipientId').toString();
   const me = studentId.toString();
   if (!isEnrolled(me, courseId)) throw new StateConflictError('NOT_ENROLLED');
-  if (recipientId === me) throw new ValidationError(['recipientId']);
+  if (recipientId === me) throw new ValidationError(['recipientId']); // can't request yourself
 
   if (!isEnrolled(me, courseId) || !isEnrolled(recipientId, courseId)) throw new StateConflictError('NOT_ENROLLED');
 
@@ -61,7 +57,7 @@ export async function sendRequest(studentId: bigint, courseIdRaw: string, recipi
   const duplicate = store.requests.some(
     (r) => r.requesterId === me && r.recipientId === recipientId && r.courseId === courseId && r.status === 'PENDING'
   );
-  if (duplicate) throw new StateConflictError('DUPLICATE_REQUEST');
+  if (duplicate) throw new StateConflictError('DUPLICATE_REQUEST'); // one pending request per pair
 
   const created: StoredRequest = {
     id: store.nextRequestId++,
@@ -118,13 +114,13 @@ export async function respond(studentId: bigint, requestIdRaw: string, decision:
   const memberships = store.memberships.filter(
     (m) => m.courseId === courseId && (m.studentId === requesterId || m.studentId === recipientId)
   );
-  if (memberships.length === 2) throw new StateConflictError('GROUP_MERGE');
+  if (memberships.length === 2) throw new StateConflictError('GROUP_MERGE'); // both already in groups
 
   if (memberships.length === 1) {
-    // one of them has a group, so the other joins it
+    // one has a group, the other joins it
     const joiner = memberships[0].studentId === requesterId ? recipientId : requesterId;
     store.memberships.push({ groupId: memberships[0].groupId, studentId: joiner, courseId });
-  } else {
+  } else { // neither has a group, make one
     const groupId = String(store.nextGroupId++);
     store.groups.push({ id: groupId, courseId, formedAt: new Date() });
     store.memberships.push({ groupId, studentId: requesterId, courseId }, { groupId, studentId: recipientId, courseId });

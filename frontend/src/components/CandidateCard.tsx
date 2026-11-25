@@ -16,8 +16,7 @@ export function interval(b: AvailabilityBlock) {
   return `${DAYS[b.weekday]} ${time(b.startMinute)}-${time(b.endMinute)}`;
 }
 
-// the limited summary, shared by the candidate cards and the request lists.
-// no name or contact details until a match is accepted.
+// limited summary for cards and request lists, no name or contact yet
 export function SummaryDetails({ summary }: { summary: CandidateSummary }) {
   return (
     <>
@@ -42,7 +41,7 @@ interface Props {
   candidate: CandidateSummary;
   rank: number;
   studentId: string;
-  // the latest request between you and this candidate, if there is one
+  // latest request with this candidate, if any
   request?: RequestRecord;
   busy: boolean;
   onSend: () => void;

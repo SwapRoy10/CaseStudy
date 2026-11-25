@@ -1,7 +1,6 @@
 # CaseStudy backend
 
-Backend & Integration; API routing, debugging,
-Matching  Algorithm
+Backend and integration, API routing, debugging and the matching algorithm.
 
 ## Running the server
 
@@ -26,7 +25,7 @@ The operator imports a roster by posting a Canvas gradebook export (or the SDD c
 
 ## Requests, groups and reviews
 
-The point of the app is forming groups, so after matching there are three more pieces, all in the same style:
+The point of the app is forming groups, so after matching there are three more pieces:
 
 | Where | What it does |
 |---|---|
@@ -47,10 +46,10 @@ requestLogger → helmet → cors → json → rate limit → routes/index.ts
                                                    middleware/errorHandler.ts → { error: { code, reason?, message } }
 ```
 
-- **Routes** map URLs to a controller, with `validate({ params, query, body })` in front to check input with Zod schemas.
-- **Controllers** read validated input from `res.locals.params` / `.query` / `.body` and the student from `res.locals.studentId`, call one module function and send its result. No business logic.
-- **Modules** know nothing about Express. They throw `StateConflictError` for expected failures and plain errors for everything else.
-- **errorHandler** maps those to HTTP statuses (SDD 10.3) and logs unexpected errors with the request id. See `docs/api/README.md`.
+- Routes map URLs to a controller, with `validate({ params, query, body })` in front to check input with Zod schemas.
+- Controllers read validated input from `res.locals.params` / `.query` / `.body` and the student from `res.locals.studentId`, call one module function and send its result. No business logic.
+- Modules know nothing about Express. They throw `StateConflictError` for expected failures and plain errors for everything else.
+- errorHandler maps those to HTTP statuses (SDD 10.3) and logs unexpected errors with the request id. See `docs/api/README.md`.
 
 ## Adding an endpoint
 
@@ -105,13 +104,13 @@ Weekdays go from 0 (Sunday) to 6. Times are minutes from midnight, so a block ha
 
 There's no weighted score. Matching goes through five rules in a fixed order, and each later rule only sorts out ties left by the earlier ones.
 
-1. **Same grade goal.** Anyone with a different goal is removed. You're also removed from your own list.
-2. **Some shared time.** Anyone who doesn't share at least some time with you is removed. Blocks that only touch (9:00 to 10:00 and 10:00 to 11:00) don't count as shared.
-3. **Overlap count.** Sort by how many of your blocks overlap with theirs, most first.
-4. **Work style.** If two people have the same count, the one with your work style goes first.
-5. **Random.** If they're still tied after that, they're shuffled.
+1. Same grade goal. Anyone with a different goal is removed. You're also removed from your own list.
+2. Some shared time. Anyone who doesn't share at least some time with you is removed. Blocks that only touch (9:00 to 10:00 and 10:00 to 11:00) don't count as shared.
+3. Overlap count. Sort by how many of your blocks overlap with theirs, most first.
+4. Work style. If two people have the same count, the one with your work style goes first.
+5. Random. If they're still tied after that, they're shuffled.
 
-The overlap count is about your blocks, not total minutes. Before counting, your blocks are cleaned up: duplicates go away and blocks that overlap get merged. Blocks that only touch stay separate. So if a classmate is free for a whole hour, two 30 minute blocks inside it count as 2, but one 1 hour block counts as 1. We did that on purpose so each 30 minute slot counts.
+The overlap count is about your blocks, not total minutes. Before counting, your blocks are cleaned up: duplicates go away and blocks that overlap get merged. Blocks that only touch stay separate. So if a classmate is free for a whole hour, two 30 minute blocks inside it count as 2, but one 1 hour block counts as 1. That's on purpose, so each 30 minute slot counts.
 
 Review averages are never used for ranking. They're only added on after the order is decided.
 
@@ -121,12 +120,12 @@ A list of everyone who passed both filters, in rank order, with no limit on how 
 
 ### Edge cases
 
-* **No matches:** you get an empty list. That's a normal result, not an error.
-* **No profile, or a profile with no free times:** throws `StateConflictError` with reason `NO_PROFILE`.
-* **Classmate with no free times:** they just don't show up.
-* **Duplicate or overlapping blocks:** cleaned up before counting, so they can't make someone's count higher.
-* **Bad data:** throws an error instead of giving wrong matches. This covers a profile from the wrong course, enum values spelled differently (like `'A track'`), number ids instead of strings, invalid blocks, the same student twice, and a review average that isn't `null` or a number from 1 to 5.
-* **Not handled:** blocks that go past midnight have to be saved as two blocks. Nothing converts time zones.
+* No matches: you get an empty list. That's a normal result, not an error.
+* No profile, or a profile with no free times: throws `StateConflictError` with reason `NO_PROFILE`.
+* Classmate with no free times: they just don't show up.
+* Duplicate or overlapping blocks: cleaned up before counting, so they can't make someone's count higher.
+* Bad data: throws an error instead of giving wrong matches. This covers a profile from the wrong course, enum values spelled differently (like `'A track'`), number ids instead of strings, invalid blocks, the same student twice, and a review average that isn't `null` or a number from 1 to 5.
+* Not handled: blocks that go past midnight have to be saved as two blocks. Nothing converts time zones.
 
 ### Running it
 
@@ -146,10 +145,10 @@ Matching reads profiles, the roster and review averages from Postgres through [`
 
 | Needed from | What matching needs | Where it plugs in |
 |---|---|---|
-| Database | ~~Real queries for profiles and enrollment~~ **Done**: `getCourseProfiles` and `isEnrolled` read the Prisma tables, with blocks in the same query | [`src/matching/data.ts`](src/matching/data.ts) |
-| Peer review | ~~A real average~~ **Done for now**: `getAverages` computes it straight from `rating_criterion`. Swap it for the review module's own function if they add one | [`src/matching/data.ts`](src/matching/data.ts) |
-| API layer | ~~A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors~~ **Done**: `GET /api/courses/:courseId/candidates` | [`src/controllers/candidates.controller.ts`](src/controllers/candidates.controller.ts) |
-| Match requests | ~~A check before saving a request that the recipient is still eligible~~ **Done**: `sendRequest` calls `isEligible` inside its transaction, and accepting makes or grows the group. See [`src/requests/`](src/requests/) and [`src/reviews/`](src/reviews/) | `src/matching/pipeline.ts` |
-| Profiles | ~~Cleaning up blocks the same way when a profile is saved~~ **Done**: `normalizeBlocks` in `src/profile/profile.schema.ts` splits midnight blocks and then merges with the matching rule. The profile routes are wired up now, see `src/controllers/profile.controller.ts` | `src/profile/profile.schema.ts` |
+| Database | ~~Real queries for profiles and enrollment~~ done: `getCourseProfiles` and `isEnrolled` read the Prisma tables, with blocks in the same query | [`src/matching/data.ts`](src/matching/data.ts) |
+| Peer review | ~~A real average~~ done for now: `getAverages` computes it straight from `rating_criterion`. Swap it for the review module's own function if they add one | [`src/matching/data.ts`](src/matching/data.ts) |
+| API layer | ~~A route that calls `findCandidates` with the student id from the session, and turns thrown errors into API errors~~ done: `GET /api/courses/:courseId/candidates` | [`src/controllers/candidates.controller.ts`](src/controllers/candidates.controller.ts) |
+| Match requests | ~~A check before saving a request that the recipient is still eligible~~ done: `sendRequest` calls `isEligible` inside its transaction, and accepting makes or grows the group. See [`src/requests/`](src/requests/) and [`src/reviews/`](src/reviews/) | `src/matching/pipeline.ts` |
+| Profiles | ~~Cleaning up blocks the same way when a profile is saved~~ done: `normalizeBlocks` in `src/profile/profile.schema.ts` splits midnight blocks and then merges with the matching rule. The profile routes are wired up now, see `src/controllers/profile.controller.ts` | `src/profile/profile.schema.ts` |
 
 `findCandidates` still checks the data it gets back, so if a real query returns rows in the wrong shape, `findCandidates` throws an error instead of quietly giving wrong matches.

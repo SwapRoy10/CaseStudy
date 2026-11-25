@@ -2,9 +2,7 @@ import { config } from '../config';
 import * as mock from './mockData';
 import * as postgres from './postgresData';
 
-// matching reads through this file. it uses the postgres queries when a database
-// is configured and the short in-memory list otherwise, so the demo still runs
-// without one (see USE_MOCK_DATA in backend/.env.example).
+// matching reads here, postgres if configured, else in memory
 const source = config.useMockData ? mock : postgres;
 
 export const getCourseProfiles = source.getCourseProfiles;

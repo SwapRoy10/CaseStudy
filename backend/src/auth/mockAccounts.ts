@@ -4,18 +4,16 @@ import { DEMO_PASSWORD, courses, enrollments, students } from '../sampleData';
 import { hashPassword } from './password';
 import { Account, Me } from './types';
 
-// in memory stand-in for postgresAccounts.ts, used by the tests and by the demo
-// when there's no database. it reads the same sampleData.ts the seed loads.
+// in memory postgresAccounts.ts for tests and the demo, reads sampleData.ts
 
-// hashing takes a moment, so every sample student shares one hash made on first use
+// hashing is slow, so all sample students share one hash made on first use
 let demoHash: Promise<string> | undefined;
 function getDemoHash() {
   demoHash ??= hashPassword(DEMO_PASSWORD);
   return demoHash;
 }
 
-// passwords changed since the server started. the sample students don't really
-// change, so this only lives as long as the process.
+// passwords changed since startup, lost on restart
 const changed = new Map<string, string>();
 const tutorialDone = new Set<string>();
 

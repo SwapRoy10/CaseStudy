@@ -5,10 +5,7 @@ import { findCandidates } from './findCandidates';
 import { getCourseProfiles, isEnrolled } from './postgresData';
 import { CSDS_393, profiles } from '../sampleData';
 
-// matching against a real postgres database with the seeded sample data.
-// these only run when DATABASE_URL is set (npm run db:up), everywhere else they
-// skip. src/globalSetup.ts seeds the database before any test runs. they cover
-// the database versions of the matching cases in the functional testing doc.
+// real postgres with the seeded sample data, skipped without DATABASE_URL
 
 describe.skipIf(config.useMockData)('matching on postgres', () => {
   const perfTag = `perf${Date.now()}`;
@@ -78,7 +75,7 @@ describe.skipIf(config.useMockData)('matching on postgres', () => {
     const expected = profiles.filter((p) => p.courseId === CSDS_393);
     expect(fromDb).toHaveLength(expected.length);
 
-    // spot check one student so we know blocks came back attached to the right person
+    // spot check that blocks came back attached to the right person
     const maya = fromDb.find((p) => p.studentId === '1001')!;
     expect(maya.blocks).toEqual([
       { weekday: 0, startMinute: 780, endMinute: 960 },
@@ -97,7 +94,7 @@ describe.skipIf(config.useMockData)('matching on postgres', () => {
     }
   });
 
-  // perf-1 and perf-2 on a real database: 200 students, nobody cut off, under 3 seconds
+  // perf-1 and perf-2 on a real db: 200 students, under 3 seconds
   it('returns all 199 classmates in a 200 student course in under 3 seconds', async () => {
     perfCourseId = (await prisma.course.create({ data: { code: perfTag, title: 'perf test', section: '001', term: 'Test' } })).id;
 

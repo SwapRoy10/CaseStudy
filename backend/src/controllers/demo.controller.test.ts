@@ -4,9 +4,7 @@ import { createApp } from '../app';
 import { config } from '../config';
 import { rosterFromDatabase, rosterFromSampleData } from './demo.controller';
 
-// the demo roster comes from postgres when there's a database and from
-// sampleData.ts when there isn't. both should give the same answer, so these
-// checks run either way.
+// demo roster comes from postgres or sampleData.ts, same answer from both
 
 const app = createApp();
 
@@ -18,8 +16,7 @@ describe('GET /api/demo/roster', () => {
 
   it('lists the courses that have profiles, and skips past semesters', async () => {
     const res = await request(app).get('/api/demo/roster');
-    // other database tests make their own courses while this runs, so only look
-    // at the five seeded ones. 4 and 5 are past semesters with no profiles
+    // other tests add courses, so only check the 5 seeded ones (4, 5 are past)
     const seeded = res.body.courses.filter((c: { id: string }) => ['1', '2', '3', '4', '5'].includes(c.id));
     expect(seeded.map((c: { code: string }) => c.code)).toEqual(['SAMPLE 101', 'SAMPLE 102', 'CSDS 393']);
   });
@@ -46,7 +43,7 @@ describe('GET /api/demo/roster', () => {
   });
 });
 
-// the whole point of sampleData.ts is that the mock and the database agree
+// mock and database must agree
 describe.skipIf(config.useMockData)('demo roster with a database', () => {
   it('gives the same roster from postgres as from sampleData.ts', async () => {
     const seededIds = rosterFromSampleData().map((c) => c.id);

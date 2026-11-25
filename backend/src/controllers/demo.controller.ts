@@ -4,10 +4,7 @@ import { prisma } from '../db';
 import { courses, enrollments, profiles, students } from '../sampleData';
 import { Prisma } from '@prisma/client';
 
-// demo stand-in, same as the X-Student-Id header: there's no real login yet, so
-// the frontend needs some way to pick who you are. this lists each course that
-// has profiles in it, with the students on its roster. it's off in production
-// (see routes/index.ts) and should be deleted once sign in exists.
+// demo only: courses with profiles and their rosters (off in production)
 
 interface DemoCourse {
   id: string;

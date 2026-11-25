@@ -8,9 +8,7 @@ import { isEligible } from '../matching/pipeline';
 import { toProfile } from '../matching/postgresData';
 import { RequestRecord } from './types';
 
-// match requests (sdd 3.3, 5.3, 6.3.5 to 6.3.8). studentId is always the signed in
-// student from the session. every change locks the students' enrollment rows,
-// lower id first, so two requests touching the same pair can't get tangled.
+// match requests (sdd 3.3, 5.3, 6.3.5 to 6.3.8), locks lower id first
 
 const withBlocks = { blocks: true } as const;
 
@@ -26,9 +24,7 @@ function toRecord(row: Prisma.MatchRequestGetPayload<object>): RequestRecord {
   };
 }
 
-// the partial unique index is the last guard against two pending requests, and a
-// unique membership is the last guard against two groups. a race that gets past
-// the checks lands here as a P2002.
+// last guard for races, unique index violations come back as P2002
 function isUniqueViolation(err: unknown) {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
 }
@@ -38,27 +34,26 @@ export async function sendRequest(studentId: bigint, courseIdRaw: string, recipi
   const recipientId = toId(recipientIdRaw, 'recipientId');
   if (recipientId === studentId) throw new ValidationError(['recipientId']);
 
-  const [first, second] = studentId < recipientId ? [studentId, recipientId] : [recipientId, studentId];
+  const [first, second] = studentId < recipientId ? [studentId, recipientId] : [recipientId, studentId]; // lock order
 
   try {
     return await prisma.$transaction(async (tx) => {
       if (!(await lockEnrollments(tx, courseId, first, second))) throw new StateConflictError('NOT_ENROLLED');
 
-      // both profiles are read inside the lock, so a profile save can't change
-      // them between the check and the insert
+      // profiles read inside the lock so a save can't change them before the insert
       const rows = await tx.profile.findMany({
         where: { courseId, studentId: { in: [studentId, recipientId] }, blocks: { some: {} } },
         include: withBlocks,
       });
       const mine = rows.find((r) => r.studentId === studentId);
       const theirs = rows.find((r) => r.studentId === recipientId);
-      if (!mine) throw new StateConflictError('NO_PROFILE');
+      if (!mine) throw new StateConflictError('NO_PROFILE'); // sender has no profile
       if (!theirs || !isEligible(toProfile(mine), toProfile(theirs))) throw new StateConflictError('NO_LONGER_ELIGIBLE');
 
       const duplicate = await tx.matchRequest.findFirst({
         where: { requesterId: studentId, recipientId, courseId, status: 'PENDING' },
       });
-      if (duplicate) throw new StateConflictError('DUPLICATE_REQUEST');
+      if (duplicate) throw new StateConflictError('DUPLICATE_REQUEST'); // already pending
 
       const created = await tx.matchRequest.create({ data: { requesterId: studentId, recipientId, courseId } });
       return toRecord(created);
@@ -69,33 +64,30 @@ export async function sendRequest(studentId: bigint, courseIdRaw: string, recipi
   }
 }
 
-// the student's sent and received requests in a course, newest first. a canceled
-// request stays in the sender's history but is gone from the recipient's list.
-// each one carries the other student's limited summary so the screen has
-// something to show before a match.
+// sent and received in a course, newest first, canceled hidden from recipient
 export async function listRequests(studentId: bigint, courseIdRaw: string): Promise<RequestRecord[]> {
   const courseId = toId(courseIdRaw, 'courseId');
 
-  // every course-scoped route checks the roster first (test plan 4.3, RESP-5)
+  // roster check first (test plan 4.3, RESP-5)
   const enrolled = await prisma.enrollment.findFirst({ where: { studentId, courseId }, select: { studentId: true } });
   if (!enrolled) throw new StateConflictError('NOT_ENROLLED');
 
   const rows = await prisma.matchRequest.findMany({
     where: {
       courseId,
-      OR: [{ requesterId: studentId }, { recipientId: studentId, status: { not: 'CANCELED' } }],
+      OR: [{ requesterId: studentId }, { recipientId: studentId, status: { not: 'CANCELED' } }], // hide canceled from recipient
     },
     orderBy: [{ requestedAt: 'desc' }, { id: 'desc' }],
   });
   if (rows.length === 0) return [];
 
-  // the summaries come from the matching code, so they follow the same limited view
+  // summaries come from matching so they use the same limited view
   const summaries = new Map<string, NonNullable<RequestRecord['other']>>();
   try {
     const candidates = await findCandidates(studentId.toString(), courseId.toString());
     candidates.forEach((c) => summaries.set(c.candidateId, c));
   } catch (err) {
-    // no profile of your own means no summaries, the requests still show
+    // no own profile means no summaries, requests still show
     if (!(err instanceof NoProfileError)) throw err;
   }
 
@@ -106,8 +98,7 @@ export async function listRequests(studentId: bigint, courseIdRaw: string): Prom
   });
 }
 
-// reads the request and checks it's yours to answer. a request that doesn't
-// exist and one that isn't yours get the same answer, so ids can't be probed.
+// missing and someone else's request both give 403, so ids can't be probed
 async function findRequest(requestIdRaw: string) {
   const requestId = toId(requestIdRaw, 'requestId');
   const row = await prisma.matchRequest.findUnique({ where: { id: requestId } });
@@ -115,7 +106,7 @@ async function findRequest(requestIdRaw: string) {
   return row;
 }
 
-// locks the request row and makes sure nobody answered it first
+// locks the request row and checks nobody answered it first
 async function lockPending(tx: Prisma.TransactionClient, requestId: bigint) {
   const rows = await tx.$queryRaw<{ status: string }[]>`
     SELECT status::text AS status FROM match_request WHERE id = ${requestId} FOR UPDATE`;
@@ -124,7 +115,7 @@ async function lockPending(tx: Prisma.TransactionClient, requestId: bigint) {
 
 export async function respond(studentId: bigint, requestIdRaw: string, decision: 'ACCEPT' | 'DECLINE') {
   const found = await findRequest(requestIdRaw);
-  // the first read only finds the course and the two students, it authorizes nothing
+  // this first read only finds the course and students, the real check is below
   if (found.recipientId !== studentId) throw new ForbiddenError();
 
   if (decision === 'DECLINE') {
@@ -143,26 +134,26 @@ export async function respond(studentId: bigint, requestIdRaw: string, decision:
 
   try {
     return await prisma.$transaction(async (tx) => {
-      // enrollment rows first, then the request, always in that order
+      // enrollment rows first, then the request, same order everywhere
       if (!(await lockEnrollments(tx, courseId, first, second))) throw new StateConflictError('NOT_ENROLLED');
       await lockPending(tx, found.id);
 
       const profiles = await tx.profile.count({
         where: { courseId, studentId: { in: [requesterId, recipientId] }, blocks: { some: {} } },
       });
-      if (profiles < 2) throw new StateConflictError('NO_LONGER_ELIGIBLE');
+      if (profiles < 2) throw new StateConflictError('NO_LONGER_ELIGIBLE'); // someone lost their profile
 
       const memberships = await tx.groupMembership.findMany({
         where: { courseId, studentId: { in: [requesterId, recipientId] } },
       });
-      if (memberships.length === 2) throw new StateConflictError('GROUP_MERGE');
+      if (memberships.length === 2) throw new StateConflictError('GROUP_MERGE'); // both already in groups
 
       if (memberships.length === 1) {
-        // one of them has a group, so the other joins it (Group.AddMember)
+        // one has a group, the other joins it (Group.AddMember)
         const joiner = memberships[0].studentId === requesterId ? recipientId : requesterId;
         await tx.groupMembership.create({ data: { groupId: memberships[0].groupId, studentId: joiner, courseId } });
       } else {
-        // neither has one, so they start a new one (Group.Create)
+        // neither has one, start a new group (Group.Create)
         const group = await tx.studyGroup.create({ data: { courseId } });
         await tx.groupMembership.createMany({
           data: [requesterId, recipientId].map((id) => ({ groupId: group.id, studentId: id, courseId })),
@@ -176,7 +167,7 @@ export async function respond(studentId: bigint, requestIdRaw: string, decision:
       return toRecord(updated);
     });
   } catch (err) {
-    // two accepts at once ended up wanting a second group for the same student
+    // two accepts at once tried to give one student a second group
     if (isUniqueViolation(err)) throw new StateConflictError('GROUP_MERGE');
     throw err;
   }

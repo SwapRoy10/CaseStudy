@@ -19,14 +19,12 @@ describe('rankCandidates', () => {
 
     const result = rankCandidates(me, classmates, () => 0);
 
-    // pass is a different grade goal, noTime has no overlap, me is the requester.
-    // twoGroup beats twoSolo on work style since both have 2 overlaps.
+    // pass has another goal, noTime no overlap, twoGroup beats twoSolo on style
     expect(ids(result)).toEqual(['threeSolo', 'twoGroup', 'twoSolo', 'one']);
   });
 
   it('work style tie break still works when tied candidates are far apart in the input', () => {
-    // a and c both have 2 overlaps but b sits between them, so this only passes
-    // if overlap ranking runs before the work style tie break (Match.RuleOrder)
+    // a and c tie on overlap, b between, so overlap ranks first (Match.RuleOrder)
     const classmates = [
       profile('a', 'A_TRACK', 'SOLO', [block(1, 9, 10), block(2, 13, 14)]),
       profile('b', 'A_TRACK', 'GROUP', [block(4, 18, 19)]),
@@ -45,7 +43,7 @@ describe('rankCandidates', () => {
   });
 
   it('shuffle is roughly uniform', () => {
-    // 3 fully tied candidates means 6 possible orders, each should show up about 1/6 of the time
+    // 3 tied candidates give 6 orders, each about 1/6 of the time
     const classmates = ['x', 'y', 'z'].map((id) => profile(id, 'A_TRACK', 'GROUP', [block(1, 9, 10)]));
     const counts: Record<string, number> = {};
 

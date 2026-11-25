@@ -38,7 +38,7 @@ You can run matching through the unit tests, or over HTTP with `npm run dev` fro
 
 1. Load every profile in the course with `getCourseProfiles` and check each one (see [Bad data checks](#bad-data-checks)). This is one query, so the requester and classmates come from the same snapshot (SDD 3.3).
 2. Throw if the same student shows up twice.
-3. Find the requester in that list. The query only returns profiles with at least one free time, so if they aren't there they have no profile or no availability, and we throw `StateConflictError` with reason `NO_PROFILE`.
+3. Find the requester in that list. The query only returns profiles with at least one free time, so if they aren't there they have no profile or no availability. Then it throws `StateConflictError` with reason `NO_PROFILE`.
 4. Call `rankCandidates` in [`pipeline.ts`](../backend/src/matching/pipeline.ts), which runs the five rules below.
 5. Look up the review averages for all the ranked candidates at once with `getAverages`.
 6. Return a `CandidateSummary` for each one, in rank order.
@@ -72,13 +72,13 @@ IDs are strings so large Postgres ids don't get rounded by JavaScript.
 
 ## The rules
 
-Matching does **not** use a weighted score. It runs five rules in a fixed order. Each rule only filters the list or reorders within ties from the rule before it.
+Matching does not use a weighted score. It runs five rules in a fixed order. Each rule only filters the list or reorders within ties from the rule before it.
 
-1. **Grade goal filter** (`filterByGradeGoal`). Keep classmates with the same grade goal. This also removes the requester from their own results.
-2. **Availability filter** (`filterByAvailability`). Keep classmates who share at least one bit of time with the requester. This step also works out the overlap count and the shared intervals.
-3. **Overlap ranking** (`rankByOverlap`). Sort by overlap count, highest first.
-4. **Work style tie break** (`tieBreakByWorkStyle`). Among candidates with the same overlap count, put the ones with the requester's work style first.
-5. **Random tie break** (`randomTieBreak`). Shuffle candidates who are still tied on both overlap count and work style. It uses a Fisher-Yates shuffle with the `rng` you pass in, so tests can pass `() => 0` to get a fixed order.
+1. Grade goal filter (`filterByGradeGoal`). Keep classmates with the same grade goal. This also removes the requester from their own results.
+2. Availability filter (`filterByAvailability`). Keep classmates who share at least one bit of time with the requester. This step also works out the overlap count and the shared intervals.
+3. Overlap ranking (`rankByOverlap`). Sort by overlap count, highest first.
+4. Work style tie break (`tieBreakByWorkStyle`). Among candidates with the same overlap count, put the ones with the requester's work style first.
+5. Random tie break (`randomTieBreak`). Shuffle candidates who are still tied on both overlap count and work style. It uses a Fisher-Yates shuffle with the `rng` you pass in, so tests can pass `() => 0` to get a fixed order.
 
 Nothing else affects the order. Review averages are not used.
 
@@ -86,17 +86,17 @@ Every candidate who passes both filters is returned. There is no limit on how ma
 
 ### How overlap works
 
-Two blocks overlap only if they are on the same weekday and `max(starts) < min(ends)`. The shared part is clipped to that range. Blocks that only touch, like 9:00 to 10:00 and 10:00 to 11:00, do **not** overlap.
+Two blocks overlap only if they are on the same weekday and `max(starts) < min(ends)`. The shared part is clipped to that range. Blocks that only touch, like 9:00 to 10:00 and 10:00 to 11:00, do not overlap.
 
 Before counting, the requester's blocks are cleaned up with `normalizeBlocks`:
 
 * exact duplicates are removed
 * blocks that overlap on the same day are merged into one
-* blocks that only touch are **kept separate**
+* blocks that only touch are kept separate
 
-The **overlap count** is the number of the requester's cleaned up blocks that overlap at least one of the candidate's blocks. A requester block that hits two candidate blocks still counts once.
+The overlap count is the number of the requester's cleaned up blocks that overlap at least one of the candidate's blocks. A requester block that hits two candidate blocks still counts once.
 
-This means the count is about blocks, not minutes. The team decided to keep touching blocks separate so each 30 minute slot counts on its own (see the comment in [`availability.ts`](../backend/src/matching/availability.ts)). For example, against a candidate free Monday 9:00 to 10:00:
+So the count is about blocks, not minutes. The team decided to keep touching blocks separate so each 30 minute slot counts on its own (see the comment in [`availability.ts`](../backend/src/matching/availability.ts)). For example, against a candidate free Monday 9:00 to 10:00:
 
 | Requester saved | Overlap count |
 |---|---|
@@ -105,7 +105,7 @@ This means the count is about blocks, not minutes. The team decided to keep touc
 
 The candidate's blocks are not cleaned up the same way. That's fine for the count, because each requester block counts at most once however many candidate blocks it hits.
 
-The **shared intervals** are the clipped overlaps. Overlapping pieces are merged for display and touching pieces stay separate. The candidate's full schedule is never returned.
+The shared intervals are the clipped overlaps. Overlapping pieces are merged for display and touching pieces stay separate. The candidate's full schedule is never returned.
 
 ## Output
 
@@ -202,7 +202,7 @@ Going through the rules:
 4. Work style within the count 1 group: ben and cal are `GROUP` like the requester, so they go before dev (`SOLO`). ana stays first even though ana is `SOLO`, because work style only breaks ties.
 5. ben and cal are still tied on both, so their order is random.
 
-Final order: **ana, gus, then ben and cal in random order, then dev**.
+Final order: ana, gus, then ben and cal in random order, then dev.
 
 ```ts
 rankCandidates(me, classmates, () => 0).map((c) => c.studentId);
@@ -292,11 +292,11 @@ The matching code doesn't log anything. Errors are thrown out of `findCandidates
 
 ### Checks backed by the code and tests
 
-* **Order changes between runs.** Only fully tied candidates move. Pass a fixed `rng` like `() => 0` to get the same order every time.
-* **`bad profile data` error.** Look at the profile with that student id. Fields must be camelCase, enums must be exactly `A_TRACK`, `PASS_TRACK`, `SOLO` or `GROUP`, ids must be strings, and every block must pass `isValidBlock`.
-* **`duplicate profiles returned` error.** The course list had the same student twice. The comment in `findCandidates.ts` points at a JOIN that returns one row per block as the likely cause.
-* **Someone you expected is missing.** Check their grade goal first, then check whether your blocks only touch theirs. Touching doesn't count.
-* **Unexpected overlap count.** Remember it counts your blocks, not minutes. Splitting one block into 30 minute pieces raises the count.
+* Order changes between runs: only fully tied candidates move. Pass a fixed `rng` like `() => 0` to get the same order every time.
+* `bad profile data` error: look at the profile with that student id. Fields must be camelCase, enums must be exactly `A_TRACK`, `PASS_TRACK`, `SOLO` or `GROUP`, ids must be strings, and every block must pass `isValidBlock`.
+* `duplicate profiles returned` error: the course list had the same student twice. The comment in `findCandidates.ts` points at a JOIN that returns one row per block as the likely cause.
+* Someone you expected is missing: check their grade goal first, then check whether your blocks only touch theirs. Touching doesn't count.
+* Unexpected overlap count: remember it counts your blocks, not minutes. Splitting one block into 30 minute pieces raises the count.
 
 ### Suggestions
 

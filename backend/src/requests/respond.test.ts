@@ -5,8 +5,7 @@ import { ForbiddenError, StateConflictError, ValidationError } from '../errors';
 import { cancel, respond, sendRequest } from './requests.service';
 import { makeClass, match } from './testUtils';
 
-// answering and canceling requests, and the groups that come out of accepting.
-// every test gets a fresh class of 6 students who all match each other.
+// answer and cancel requests, and groups from accepting, 6 fresh students
 
 describe.skipIf(config.useMockData)('answering requests', () => {
   let courseId: bigint;

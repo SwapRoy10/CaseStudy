@@ -2,16 +2,13 @@ import { Id, Profile } from './types';
 import { enrollments } from '../sampleData';
 import { averageFor, store } from '../memory/store';
 
-// in memory stand-in for the postgres reads, used by the tests and by the demo
-// when there's no database. it reads memory/store.ts, which starts as the rows in
-// src/sampleData.ts (the same ones the seed loads into postgres) and keeps any
-// profile a student saves. the functions match postgresData.ts.
+// in memory postgresData.ts for tests and the no database demo
 
-// like the real query, only profiles that have availability come back
+// like the real query, skips profiles with no availability
 export async function getCourseProfiles(courseId: Id): Promise<Profile[]> {
   return store.profiles
     .filter((p) => p.courseId === courseId && p.blocks.length > 0)
-    .map((p) => ({ ...p, blocks: p.blocks.map((b) => ({ ...b })) }));
+    .map((p) => ({ ...p, blocks: p.blocks.map((b) => ({ ...b })) })); // copies so callers can't edit the store
 }
 
 export async function isEnrolled(studentId: Id, courseId: Id): Promise<boolean> {
