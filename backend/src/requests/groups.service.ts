@@ -1,4 +1,4 @@
-// collaborative code by the group and claude sonnet 5.5
+// original code by somesh, written by hand
 
 import { prisma } from '../db';
 import { ForbiddenError, StateConflictError, toId } from '../errors';
