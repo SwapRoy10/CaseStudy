@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import type { CandidateSummary } from '../matching/types';
 
 // sdd 6.2

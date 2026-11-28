@@ -1,3 +1,5 @@
+// original code by marana, written by hand
+
 export class ValidationError extends Error {
   readonly code = 'VALIDATION';
   constructor(public readonly fields: string[]) {

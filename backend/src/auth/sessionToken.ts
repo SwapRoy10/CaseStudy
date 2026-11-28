@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { config } from '../config';
 

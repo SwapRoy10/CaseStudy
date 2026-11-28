@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import { ApiError } from './errorHandler';

@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { Id, Profile } from './types';
 import { enrollments } from '../sampleData';
 import { averageFor, store } from '../memory/store';

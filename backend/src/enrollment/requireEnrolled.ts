@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import { isEnrolled } from '../matching/data';
 import { StateConflictError } from '../matching/errors';
 

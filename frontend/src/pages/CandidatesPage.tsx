@@ -1,3 +1,6 @@
+// collaborative code by somesh and claude sonnet 5.5
+// some parts are original code by swap, written by hand
+
 import { useEffect, useState } from 'react';
 import { api, ApiRequestError } from '../services/api';
 import type { CandidateSummary, Id, RequestRecord } from '../types/api';

@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 // shared types from sdd 6.2, string ids so bigints don't get rounded
 
 export type Id = string;

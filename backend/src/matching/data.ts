@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { config } from '../config';
 import * as mock from './mockData';
 import * as postgres from './postgresData';

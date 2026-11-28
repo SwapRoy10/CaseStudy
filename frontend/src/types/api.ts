@@ -1,3 +1,6 @@
+// collaborative code by somesh and claude sonnet 5.5
+// some parts are original code by swap, written by hand
+
 // mirrors backend/src/matching/types.ts, keep both in sync
 
 export type Id = string;

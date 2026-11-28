@@ -1,3 +1,6 @@
+// collaborative code by somesh and claude sonnet 5.5
+// some parts are original code by marana, written by hand
+
 import { generatePassword, hashPassword } from '../auth/password';
 import { config } from '../config';
 import { prisma } from '../db';

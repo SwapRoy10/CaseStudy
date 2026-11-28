@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { AvailabilityBlock, GradeGoal, Profile, WorkStyle } from './types';
 
 // helpers shared by the matching tests

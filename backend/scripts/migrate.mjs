@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 // runs prisma migrate deploy, DIRECT_URL falls back to DATABASE_URL
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

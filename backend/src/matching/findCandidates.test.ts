@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { describe, expect, it, vi } from 'vitest';
 import { findCandidates } from './findCandidates';
 import { getAverages, getCourseProfiles } from './data';

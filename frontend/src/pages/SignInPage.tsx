@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import { FormEvent, useEffect, useState } from 'react';
 import { api, ApiRequestError } from '../services/api';
 import type { DemoCourse, Me } from '../types/api';

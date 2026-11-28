@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { Profile } from './types';
 import {
   ScoredCandidate,

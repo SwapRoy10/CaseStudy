@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { describe, expect, it } from 'vitest';
 import { WorkStyle } from './types';
 import {

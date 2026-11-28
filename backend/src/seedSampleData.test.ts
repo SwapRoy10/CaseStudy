@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { config } from './config';
 import { prisma } from './db';

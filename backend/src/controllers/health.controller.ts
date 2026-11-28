@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import type { Request, Response } from 'express';
 
 // used by the frontend connection indicator and the smoke test

@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { findAccountById, getMe, markTutorialComplete, setPasswordHash } from '../auth/accounts';

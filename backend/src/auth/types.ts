@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 // what the sign in code needs to know about a student
 export interface Account {
   id: string;

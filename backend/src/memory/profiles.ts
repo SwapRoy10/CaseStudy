@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import { ValidationError, StateConflictError, toId } from '../errors';
 import { students } from '../sampleData';
 import { profileInputSchema, normalizeBlocks } from '../profile/profile.schema';

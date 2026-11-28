@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import type { AvailabilityBlock } from './types/api';
 
 // grid works in half hours, a cell is day * 48 + slot

@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import { describe, expect, it } from 'vitest';
 import { isLocalDatabase, testsMayUseDatabase } from './localDatabase';
 

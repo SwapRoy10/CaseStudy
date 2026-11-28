@@ -1,3 +1,5 @@
+// collaborative code by somesh and claude sonnet 5.5
+
 import type { AvailabilityBlock, GradeGoal, WorkStyle } from '../matching/types';
 import { getOwnProfile } from './profile.service';
 

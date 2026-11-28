@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { prisma } from '../db';
 import { ForbiddenError, StateConflictError, toId } from '../errors';
 import { toOwnProfile } from '../profile/ownProfile';

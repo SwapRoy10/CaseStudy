@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 // sdd 10.3, typed errors the api layer maps to a status
 
 export type ConflictReason =
