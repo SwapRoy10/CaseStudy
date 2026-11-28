@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 
 import { ValidationError, StateConflictError, toId } from '../errors';
 import { students } from '../sampleData';

@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';

@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 
 // csv text to rows of cells, handles quoted commas like "Rivera, Alex"
 export function parseCsv(text: string): string[][] {

@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 // some parts are original code by swap, written by hand
 
 import { describe, expect, it, vi } from 'vitest';

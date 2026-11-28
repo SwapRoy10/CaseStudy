@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';

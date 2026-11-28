@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

@@ -1,4 +1,4 @@
-// collaborative code by somesh and claude sonnet 5.5
+// collaborative code by the group and claude sonnet 5.5
 
 // tests reseed and delete rows, so only a local db is safe
 export function isLocalDatabase(url: string | undefined): boolean {
