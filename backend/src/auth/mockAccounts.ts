@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { currentTerm } from '../courses/listCourses';
 import { store } from '../memory/store';
 import { DEMO_PASSWORD, courses, enrollments, students } from '../sampleData';

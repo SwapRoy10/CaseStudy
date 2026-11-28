@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import type { Request, Response } from 'express';
 import { requireEnrolled } from '../enrollment/requireEnrolled';
 import { toOwnProfile } from '../profile/ownProfile';

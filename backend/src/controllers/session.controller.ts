@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { findAccountByEmail } from '../auth/accounts';

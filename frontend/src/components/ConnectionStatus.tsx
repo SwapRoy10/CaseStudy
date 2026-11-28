@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 

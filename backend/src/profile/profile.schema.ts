@@ -1,3 +1,5 @@
+// original code by marana, written by hand
+
 import { z } from 'zod';
 import { normalizeBlocks as mergeLikeMatching } from '../matching/availability';
 

@@ -1,3 +1,6 @@
+// collaborative code by the group and claude sonnet 5.5
+// some parts are original code by marana, written by hand
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../db';
 import { verifyPassword } from '../auth/password';

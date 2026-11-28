@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { StateConflictError } from '../matching/errors';
 // profile and enrollment throw their own classes from src/errors.ts

@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app';

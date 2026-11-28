@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import rateLimit from 'express-rate-limit';
 import { config } from '../config';
 

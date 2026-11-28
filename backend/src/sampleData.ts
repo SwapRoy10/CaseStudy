@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { AvailabilityBlock, GradeGoal, WorkStyle } from './matching/types';
 
 // sample data for the seed and demo, courses 1 and 2 are fixed for tests

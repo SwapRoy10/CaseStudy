@@ -1,3 +1,5 @@
+// original code by marana, written by hand
+
 generator client {
   provider = "prisma-client-js"
 }

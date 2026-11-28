@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { StateConflictError } from './errors';
 import { CandidateSummary, Id, Profile } from './types';
 import { getAverages, getCourseProfiles } from './data';

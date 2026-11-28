@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';

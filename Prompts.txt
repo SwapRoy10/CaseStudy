@@ -1,0 +1,38 @@
+Prompts.txt
+
+AI tool used: Claude (Claude Code, Claude Sonnet 5.5)
+Prompts below are by Somesh. They are summarized at a high level and each response is summarized in a line or two.
+Code that came out of these prompts is marked "collaborative code by the group and claude sonnet 5.5" at the top of the file.
+Matching engine source and teammates' files are marked as written by hand. Matching tests were generated from the functional testing document and validated by hand.
+
+1. database and ui (Nov 12)
+Prompt: asked what was left for the real database and more ui work, and to use a real class roster with names instead of placeholders.
+Response: set up a local Postgres with docker, added a CSDS 393 roster as seed data, and added a course and student picker by name with a short explanation of how matching works.
+
+2. coverage (Nov 12)
+Prompt: asked to measure test coverage and add the coverage write up as coverage.md.
+Response: added coverage measurement, ran the database tests in CI, and wrote docs/coverage.md.
+
+3. functional tests (Nov 12)
+Prompt: asked whether the functional tests covered everyone's code, and gave the functional testing document as the source of the cases.
+Response: added tests for the document's cases, fixed error mapping so profile and enrollment errors return the right status codes, and made matching read its data from one snapshot.
+
+4. comments (Nov 12, Nov 25)
+Prompt: asked for short, lowercase, plain comments across the code and for the code to stay simple.
+Response: reworded comments in the backend and frontend and made the code walkthrough easier to follow.
+
+5. sign in and roster import (Nov 17)
+Prompt: asked to build sign in and a roster import that reads a Canvas class roster export, in the same simple style as the rest of the code, with tests.
+Response: added accounts and sign in, a csv roster import, a demo picker, and tests for each. The demo roster is also kept in the database.
+
+6. issue fixes (Nov 17, Nov 18)
+Prompt: asked to fix the open github issues, including the profile page not saving and the enrollment check on the profile, requests and group GET routes.
+Response: fixed the issues and added tests for each.
+
+7. availability grid and walkthrough (Nov 18)
+Prompt: asked for a weekly availability grid that is careful about privacy, a practice walkthrough for new users, and a fix for sign in limits behind a proxy.
+Response: added the availability grid, the tutorial dialog, and per student sign in limits that work behind a proxy.
+
+8. coverage and mutation testing (Nov 17, Nov 18)
+Prompt: asked to rerun coverage with the database on and to rerun mutation testing after a teammate's changes were merged, then update coverage.md.
+Response: reran both and updated docs/coverage.md.

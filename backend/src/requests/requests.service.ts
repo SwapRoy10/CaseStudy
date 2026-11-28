@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { ForbiddenError, StateConflictError, ValidationError, toId } from '../errors';

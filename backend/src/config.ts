@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import { existsSync } from 'node:fs';
 import { z } from 'zod';
 

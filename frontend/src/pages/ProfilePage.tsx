@@ -1,3 +1,6 @@
+// collaborative code by the group and claude sonnet 5.5
+// some parts are original code by alkim, written by hand
+
 import { useEffect, useState } from 'react';
 import { api, ApiRequestError } from '../services/api';
 import type { GradeGoal, Id, WorkStyle } from '../types/api';

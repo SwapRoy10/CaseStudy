@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { RequestHandler } from 'express';
 import { config } from '../config';

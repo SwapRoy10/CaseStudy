@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { config } from '../config';
 import { prisma } from '../db';
 import { courses as sampleCourses } from '../sampleData';

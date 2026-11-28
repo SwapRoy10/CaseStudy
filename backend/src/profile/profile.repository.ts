@@ -1,3 +1,5 @@
+// original code by marana, written by hand
+
 import { Prisma, GradeGoal, WorkStyle } from '@prisma/client';
 import { prisma } from '../db';
 import type { Block } from './profile.schema';

@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { Id, Profile } from './types';

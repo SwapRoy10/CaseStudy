@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { Prisma } from '@prisma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../config';

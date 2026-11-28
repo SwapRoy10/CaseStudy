@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import { createApp } from './app';
 import { config } from './config';
 import { prisma } from './db';

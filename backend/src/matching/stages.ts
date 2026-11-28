@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { AvailabilityBlock, GradeGoal, Id, Profile, WorkStyle } from './types';
 import { normalizeBlocks, sharedIntersections } from './availability';
 

@@ -1,3 +1,6 @@
+// collaborative code by the group and claude sonnet 5.5
+// some parts are original code by swap, written by hand
+
 import express, { Router } from 'express';
 import { getHealth } from '../controllers/health.controller';
 import { getCandidates } from '../controllers/candidates.controller';

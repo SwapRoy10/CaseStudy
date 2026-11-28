@@ -1,3 +1,5 @@
+// original code by swap, written by hand
+
 import { randomUUID } from 'node:crypto';
 import pino from 'pino';
 import { pinoHttp } from 'pino-http';

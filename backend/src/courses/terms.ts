@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 const SEASON = { winter: 1, spring: 2, summer: 3, fall: 4 };
 
 // number to compare terms like "Fall 2026" by, bigger is later

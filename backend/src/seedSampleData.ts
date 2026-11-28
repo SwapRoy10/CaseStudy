@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { PrismaClient } from '@prisma/client';
 import { hashPassword, verifyPassword } from './auth/password';
 import { REVIEW_CRITERIA } from './reviews/criteria';

@@ -1,3 +1,5 @@
+// original code by somesh, written by hand
+
 import { AvailabilityBlock } from './types';
 
 // bounds from sdd 5.1 and 6.2, profile saving uses it too

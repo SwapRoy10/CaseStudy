@@ -1,3 +1,5 @@
+// original code by marana, written by hand
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../db';
 import { saveProfile, getOwnProfile } from './profile.service';

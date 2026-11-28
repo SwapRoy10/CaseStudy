@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { prisma } from '../db';
 import { GradeGoal, WorkStyle } from '@prisma/client';
 import { respond, sendRequest } from './requests.service';

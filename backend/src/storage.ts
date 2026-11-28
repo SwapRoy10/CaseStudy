@@ -1,3 +1,5 @@
+// collaborative code by the group and claude sonnet 5.5
+
 import { config } from './config';
 import * as memoryGroups from './memory/groups';
 import * as memoryProfiles from './memory/profiles';
