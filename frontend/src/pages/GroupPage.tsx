@@ -1,4 +1,4 @@
-// original code by somesh, written by hand
+// collaborative code by the group and claude sonnet 5.5
 
 import { useEffect, useState } from 'react';
 import { api, ApiRequestError } from '../services/api';
